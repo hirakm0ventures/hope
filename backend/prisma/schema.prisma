@@ -11,3 +11,45 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum Tier {
+  GENERAL
+  VIP
+  EARLY_BIRD
+}
+
+enum RsvpStatus {
+  CONFIRMED
+  WAITLISTED
+  OFFERED
+  EXPIRED
+  CANCELLED
+}
+
+model Event {
+  id            String   @id @default(uuid())
+  name          String
+  totalCapacity Int
+  createdAt     DateTime @default(now())
+  rsvps         Rsvp[]
+
+  @@map("events")
+}
+
+model Rsvp {
+  id               String     @id @default(uuid())
+  userId           String
+  eventId          String
+  tier             Tier       @default(GENERAL)
+  status           RsvpStatus @default(CONFIRMED)
+  waitlistPosition Int?
+  offerExpiresAt   DateTime?
+  createdAt        DateTime   @default(now())
+
+  event Event @relation(fields: [eventId], references: [id])
+
+  @@index([eventId, status])
+  @@index([eventId, status, createdAt])
+  @@index([status, offerExpiresAt])
+  @@map("rsvps")
+}
