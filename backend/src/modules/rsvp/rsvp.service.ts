@@ -11,7 +11,7 @@ import { WaitlistService } from '../waitlist/waitlist.service.js';
 
 /** Valid RSVP state transitions */
 const VALID_TRANSITIONS: Record<RsvpStatus, RsvpStatus[]> = {
-  WAITLISTED: ['OFFERED'],
+  WAITLISTED: ['OFFERED', 'CANCELLED'],
   OFFERED: ['CONFIRMED', 'EXPIRED', 'CANCELLED'],
   CONFIRMED: ['CANCELLED'],
   EXPIRED: [],
@@ -43,11 +43,29 @@ export class RsvpService {
       const event = await tx.event.findUnique({ where: { id: dto.eventId } });
       if (!event) throw new NotFoundException(`Event ${dto.eventId} not found`);
 
-      const confirmedCount = await tx.rsvp.count({
-        where: { eventId: dto.eventId, status: 'CONFIRMED' },
+      // Check for existing active RSVP by this user for this event
+      const existing = await tx.rsvp.findFirst({
+        where: {
+          userId: dto.userId,
+          eventId: dto.eventId,
+          status: { in: ['CONFIRMED', 'WAITLISTED', 'OFFERED'] },
+        },
+      });
+      if (existing) {
+        throw new ConflictException(
+          `User ${dto.userId} already has an active RSVP (${existing.status}) for this event`,
+        );
+      }
+
+      // Count CONFIRMED + OFFERED to avoid over-allocation
+      const activeCount = await tx.rsvp.count({
+        where: {
+          eventId: dto.eventId,
+          status: { in: ['CONFIRMED', 'OFFERED'] },
+        },
       });
 
-      if (confirmedCount < event.totalCapacity) {
+      if (activeCount < event.totalCapacity) {
         // Capacity available → CONFIRMED
         const rsvp = await tx.rsvp.create({
           data: {
@@ -110,10 +128,7 @@ export class RsvpService {
         const rsvp = await tx.rsvp.findUnique({ where: { id } });
         if (!rsvp) throw new NotFoundException(`RSVP ${id} not found`);
 
-        // Allow cancelling from CONFIRMED or OFFERED
-        if (rsvp.status !== 'CONFIRMED' && rsvp.status !== 'OFFERED') {
-          this.validateTransition(rsvp.status as RsvpStatus, 'CANCELLED');
-        }
+        this.validateTransition(rsvp.status as RsvpStatus, 'CANCELLED');
 
         const updated = await tx.rsvp.update({
           where: { id },
@@ -128,8 +143,11 @@ export class RsvpService {
         return { rsvp: updated, previousStatus: rsvp.status };
       })
       .then(async (result) => {
-        // After transaction, if was CONFIRMED → process waitlist outside tx
-        if (result.previousStatus === 'CONFIRMED') {
+        // After transaction, if was CONFIRMED or OFFERED → process waitlist
+        if (
+          result.previousStatus === 'CONFIRMED' ||
+          result.previousStatus === 'OFFERED'
+        ) {
           await this.waitlistService.processWaitlist(result.rsvp.eventId);
         }
         return result.rsvp;
@@ -140,8 +158,8 @@ export class RsvpService {
    * Accept an offer — atomic: check not expired, set CONFIRMED
    */
   async acceptOffer(id: string) {
-    return this.prisma.client.$transaction(async (tx) => {
-      // Lock the row using findFirst with a raw query for SELECT FOR UPDATE
+    const result = await this.prisma.client.$transaction(async (tx) => {
+      // Lock the row using SELECT FOR UPDATE
       const [rsvp] = await tx.$queryRawUnsafe<any[]>(
         `SELECT * FROM "rsvps" WHERE "id" = $1 FOR UPDATE`,
         id,
@@ -156,12 +174,12 @@ export class RsvpService {
       }
 
       if (rsvp.offerExpiresAt && new Date(rsvp.offerExpiresAt) < new Date()) {
-        // Mark as expired
+        // Mark as expired inside tx
         await tx.rsvp.update({
           where: { id },
           data: { status: 'EXPIRED', offerExpiresAt: null },
         });
-        throw new ConflictException('Offer has expired');
+        return { expired: true, eventId: rsvp.eventId };
       }
 
       const updated = await tx.rsvp.update({
@@ -174,8 +192,16 @@ export class RsvpService {
       });
 
       console.log(`Offer accepted: RSVP ${id} is now CONFIRMED`);
-      return updated;
+      return { expired: false, rsvp: updated };
     });
+
+    if (result.expired) {
+      // Reprocess waitlist for the freed slot, then tell the caller
+      await this.waitlistService.processWaitlist(result.eventId);
+      throw new ConflictException('Offer has expired');
+    }
+
+    return result.rsvp;
   }
 
   /**
@@ -183,12 +209,16 @@ export class RsvpService {
    */
   async declineOffer(id: string) {
     const rsvp = await this.prisma.client.$transaction(async (tx) => {
-      const rsvp = await tx.rsvp.findUnique({ where: { id } });
-      if (!rsvp) throw new NotFoundException(`RSVP ${id} not found`);
+      // Lock the row to prevent races with cron expiry
+      const [row] = await tx.$queryRawUnsafe<any[]>(
+        `SELECT * FROM "rsvps" WHERE "id" = $1 FOR UPDATE`,
+        id,
+      );
+      if (!row) throw new NotFoundException(`RSVP ${id} not found`);
 
-      if (rsvp.status !== 'OFFERED') {
+      if (row.status !== 'OFFERED') {
         throw new ConflictException(
-          `Cannot decline: RSVP is ${rsvp.status}, not OFFERED`,
+          `Cannot decline: RSVP is ${row.status}, not OFFERED`,
         );
       }
 

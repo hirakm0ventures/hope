@@ -44,7 +44,7 @@ export class WaitlistService {
         `SELECT * FROM "rsvps"
          WHERE "eventId" = $1
            AND "status" = 'WAITLISTED'
-         ORDER BY "createdAt" ASC
+         ORDER BY "waitlistPosition" ASC NULLS LAST, "createdAt" ASC
          LIMIT 1
          FOR UPDATE SKIP LOCKED`,
         eventId,

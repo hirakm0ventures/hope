@@ -49,7 +49,7 @@ export class EventsService {
       confirmed,
       waitlisted,
       offered,
-      available: event.totalCapacity - confirmed,
+      available: event.totalCapacity - confirmed - offered,
     };
   }
 

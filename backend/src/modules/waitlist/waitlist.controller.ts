@@ -1,4 +1,8 @@
 import { Controller, Post, Body } from '@nestjs/common';
+import {
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { JoinWaitlistDto } from './dto/index.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
@@ -13,7 +17,44 @@ export class WaitlistController {
     return this.prisma.client.$transaction(async (tx) => {
       const event = await tx.event.findUnique({ where: { id: dto.eventId } });
       if (!event) {
-        throw new Error(`Event ${dto.eventId} not found`);
+        throw new NotFoundException(`Event ${dto.eventId} not found`);
+      }
+
+      // Prevent duplicate active RSVP
+      const existing = await tx.rsvp.findFirst({
+        where: {
+          userId: dto.userId,
+          eventId: dto.eventId,
+          status: { in: ['CONFIRMED', 'WAITLISTED', 'OFFERED'] },
+        },
+      });
+      if (existing) {
+        throw new ConflictException(
+          `User ${dto.userId} already has an active RSVP (${existing.status}) for this event`,
+        );
+      }
+
+      // Check if there's capacity — if so, confirm directly instead of waitlisting
+      const activeCount = await tx.rsvp.count({
+        where: {
+          eventId: dto.eventId,
+          status: { in: ['CONFIRMED', 'OFFERED'] },
+        },
+      });
+
+      if (activeCount < event.totalCapacity) {
+        const rsvp = await tx.rsvp.create({
+          data: {
+            userId: dto.userId,
+            eventId: dto.eventId,
+            tier,
+            status: 'CONFIRMED',
+          },
+        });
+        console.log(
+          `Capacity available — user ${dto.userId} confirmed directly for event ${dto.eventId}`,
+        );
+        return rsvp;
       }
 
       const maxPosition = await tx.rsvp.aggregate({
