@@ -23,7 +23,6 @@ export default function BookingPage() {
   async function selectEvent(id: string) {
     const stats = await api<EventStats>(`/events/${id}/stats`);
     setSelectedEvent(stats);
-    setMsg(null);
   }
 
   async function handleBook() {
@@ -91,7 +90,10 @@ export default function BookingPage() {
                 {events.map((ev) => (
                   <button
                     key={ev.id}
-                    onClick={() => selectEvent(ev.id)}
+                    onClick={() => {
+                      setMsg(null);
+                      void selectEvent(ev.id);
+                    }}
                     className="group w-full text-left rounded-2xl border border-white/10 bg-white/5 p-4 transition duration-200 hover:-translate-y-0.5 hover:border-cyan-300/60 hover:bg-white/8"
                   >
                     <div className="flex items-center justify-between gap-4">
@@ -119,7 +121,13 @@ export default function BookingPage() {
                     {selectedEvent.name}
                   </h2>
                 </div>
-                <button onClick={() => setSelectedEvent(null)} className="btn-ghost w-fit">
+                <button
+                  onClick={() => {
+                    setSelectedEvent(null);
+                    setMsg(null);
+                  }}
+                  className="btn-ghost w-fit"
+                >
                   Switch event
                 </button>
               </div>

@@ -11,6 +11,11 @@ type EventStatsResponse = {
   available: number;
   offered: number;
 };
+type EventQueueResponseItem = {
+  id: string;
+  userId: string;
+  status: 'OFFERED' | 'WAITLISTED';
+};
 
 describe('Waitlist engine system validation (e2e)', () => {
   let app: INestApplication<App>;
@@ -512,6 +517,39 @@ describe('Waitlist engine system validation (e2e)', () => {
 
     expect(stats.available).toBe(1);
     expect(stats.offered).toBe(0);
+  });
+
+  it('returns host queue data with offered entries first and waitlist entries after', async () => {
+    const event = await createEvent(1, 'qa-host-queue-view');
+
+    const confirmed = await createRsvp(event.id, 'qa-host-confirmed', 'VIP');
+    const offered = await joinWaitlist(event.id, 'qa-host-offered', 'VIP');
+    const waitlisted = await joinWaitlist(
+      event.id,
+      'qa-host-waitlisted',
+      'ANY',
+    );
+
+    await request(app.getHttpServer())
+      .post(`/rsvp/${confirmed.id}/cancel`)
+      .expect(201);
+
+    const response = await request(app.getHttpServer())
+      .get(`/events/${event.id}/queue`)
+      .expect(200);
+    const queue = response.body as EventQueueResponseItem[];
+
+    expect(queue).toHaveLength(2);
+    expect(queue[0]).toMatchObject({
+      id: offered.id,
+      status: 'OFFERED',
+      userId: 'qa-host-offered',
+    });
+    expect(queue[1]).toMatchObject({
+      id: waitlisted.id,
+      status: 'WAITLISTED',
+      userId: 'qa-host-waitlisted',
+    });
   });
 
   it('expires outstanding offers through the scheduler and promotes the next candidate', async () => {

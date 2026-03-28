@@ -2,7 +2,17 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { CreateEventDto, UpdateCapacityDto } from './dto/index.js';
 import { WaitlistService } from '../waitlist/waitlist.service.js';
-import { Prisma } from '../../../generated/prisma/client.js';
+import { Prisma, RsvpStatus } from '../../../generated/prisma/client.js';
+
+type QueueItem = {
+  id: string;
+  userId: string;
+  tier: string;
+  status: RsvpStatus;
+  waitlistPosition: number | null;
+  offerExpiresAt: Date | null;
+  createdAt: Date;
+};
 
 @Injectable()
 export class EventsService {
@@ -54,6 +64,28 @@ export class EventsService {
     };
   }
 
+  async getQueue(id: string) {
+    await this.findOne(id);
+
+    const queue = await this.prisma.client.rsvp.findMany({
+      where: {
+        eventId: id,
+        status: { in: ['OFFERED', 'WAITLISTED'] },
+      },
+      select: {
+        id: true,
+        userId: true,
+        tier: true,
+        status: true,
+        waitlistPosition: true,
+        offerExpiresAt: true,
+        createdAt: true,
+      },
+    });
+
+    return queue.sort((left, right) => this.compareQueueItems(left, right));
+  }
+
   async updateCapacity(id: string, dto: UpdateCapacityDto) {
     const { previousCapacity, updated } = await this.prisma.client.$transaction(
       async (tx) => {
@@ -102,5 +134,33 @@ export class EventsService {
     const event = await this.findOne(eventId);
     const active = await this.getActiveCount(eventId);
     return active < event.totalCapacity;
+  }
+
+  private compareQueueItems(left: QueueItem, right: QueueItem) {
+    const statusRank = (status: RsvpStatus) =>
+      status === 'OFFERED' ? 0 : status === 'WAITLISTED' ? 1 : 2;
+
+    const rankDifference = statusRank(left.status) - statusRank(right.status);
+    if (rankDifference !== 0) {
+      return rankDifference;
+    }
+
+    if (left.status === 'OFFERED' && right.status === 'OFFERED') {
+      const leftExpiry =
+        left.offerExpiresAt?.getTime() ?? Number.MAX_SAFE_INTEGER;
+      const rightExpiry =
+        right.offerExpiresAt?.getTime() ?? Number.MAX_SAFE_INTEGER;
+      if (leftExpiry !== rightExpiry) {
+        return leftExpiry - rightExpiry;
+      }
+    }
+
+    const leftPosition = left.waitlistPosition ?? Number.MAX_SAFE_INTEGER;
+    const rightPosition = right.waitlistPosition ?? Number.MAX_SAFE_INTEGER;
+    if (leftPosition !== rightPosition) {
+      return leftPosition - rightPosition;
+    }
+
+    return left.createdAt.getTime() - right.createdAt.getTime();
   }
 }

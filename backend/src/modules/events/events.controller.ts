@@ -26,6 +26,11 @@ export class EventsController {
     return this.eventsService.getStats(id);
   }
 
+  @Get(':id/queue')
+  getQueue(@Param('id') id: string) {
+    return this.eventsService.getQueue(id);
+  }
+
   @Patch(':id/capacity')
   updateCapacity(@Param('id') id: string, @Body() dto: UpdateCapacityDto) {
     return this.eventsService.updateCapacity(id, dto);
