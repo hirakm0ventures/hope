@@ -5,8 +5,8 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import { RsvpStatus } from '../../../generated/prisma/enums.js';
-import { Prisma } from '../../../generated/prisma/client.js';
+import { RsvpStatus, Tier } from '../../../generated/prisma/enums.js';
+import { Prisma, type Rsvp } from '../../../generated/prisma/client.js';
 import { CreateRsvpDto } from './dto/index.js';
 import { WaitlistService } from '../waitlist/waitlist.service.js';
 
@@ -18,6 +18,25 @@ const VALID_TRANSITIONS: Record<RsvpStatus, RsvpStatus[]> = {
   EXPIRED: [],
   CANCELLED: [],
 };
+
+type LockedOfferRow = {
+  id: string;
+  eventId: string;
+  tier: Tier;
+  status: RsvpStatus;
+  offerExpiresAt: Date | null;
+};
+
+type AcceptOfferResult =
+  | {
+      expired: true;
+      eventId: string;
+      tier: Tier;
+    }
+  | {
+      expired: false;
+      rsvp: Rsvp;
+    };
 
 @Injectable()
 export class RsvpService {
@@ -41,7 +60,9 @@ export class RsvpService {
     const tier = dto.tier ?? 'GENERAL';
 
     return this.prisma.client.$transaction(async (tx) => {
-      const [event] = await tx.$queryRaw<{ id: string; totalCapacity: number }[]>(
+      const [event] = await tx.$queryRaw<
+        { id: string; totalCapacity: number }[]
+      >(
         Prisma.sql`
           SELECT "id", "totalCapacity"
           FROM "events"
@@ -119,8 +140,9 @@ export class RsvpService {
   }
 
   async findByUser(userId: string, eventId?: string) {
-    const where: any = { userId };
-    if (eventId) where.eventId = eventId;
+    const where: Prisma.RsvpWhereInput = eventId
+      ? { userId, eventId }
+      : { userId };
     return this.prisma.client.rsvp.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -136,7 +158,7 @@ export class RsvpService {
         const rsvp = await tx.rsvp.findUnique({ where: { id } });
         if (!rsvp) throw new NotFoundException(`RSVP ${id} not found`);
 
-        this.validateTransition(rsvp.status as RsvpStatus, 'CANCELLED');
+        this.validateTransition(rsvp.status, 'CANCELLED');
 
         const updated = await tx.rsvp.update({
           where: { id },
@@ -168,42 +190,46 @@ export class RsvpService {
    * Accept an offer — atomic: check not expired, set CONFIRMED
    */
   async acceptOffer(id: string) {
-    const result = await this.prisma.client.$transaction(async (tx) => {
-      // Lock the row using SELECT FOR UPDATE
-      const [rsvp] = await tx.$queryRawUnsafe<any[]>(
-        `SELECT * FROM "rsvps" WHERE "id" = $1 FOR UPDATE`,
-        id,
-      );
+    const result: AcceptOfferResult = await this.prisma.client.$transaction(
+      async (tx) => {
+        // Lock the row using SELECT FOR UPDATE
+        const [rsvp] = await tx.$queryRaw<LockedOfferRow[]>(Prisma.sql`
+          SELECT "id", "eventId", "tier", "status", "offerExpiresAt"
+          FROM "rsvps"
+          WHERE "id" = ${id}
+          FOR UPDATE
+        `);
 
-      if (!rsvp) throw new NotFoundException(`RSVP ${id} not found`);
+        if (!rsvp) throw new NotFoundException(`RSVP ${id} not found`);
 
-      if (rsvp.status !== 'OFFERED') {
-        throw new ConflictException(
-          `Cannot accept: RSVP is ${rsvp.status}, not OFFERED`,
-        );
-      }
+        if (rsvp.status !== 'OFFERED') {
+          throw new ConflictException(
+            `Cannot accept: RSVP is ${rsvp.status}, not OFFERED`,
+          );
+        }
 
-      if (rsvp.offerExpiresAt && new Date(rsvp.offerExpiresAt) < new Date()) {
-        // Mark as expired inside tx
-        await tx.rsvp.update({
+        if (rsvp.offerExpiresAt && new Date(rsvp.offerExpiresAt) < new Date()) {
+          // Mark as expired inside tx
+          await tx.rsvp.update({
+            where: { id },
+            data: { status: 'EXPIRED', offerExpiresAt: null },
+          });
+          return { expired: true, eventId: rsvp.eventId, tier: rsvp.tier };
+        }
+
+        const updated = await tx.rsvp.update({
           where: { id },
-          data: { status: 'EXPIRED', offerExpiresAt: null },
+          data: {
+            status: 'CONFIRMED',
+            waitlistPosition: null,
+            offerExpiresAt: null,
+          },
         });
-        return { expired: true, eventId: rsvp.eventId, tier: rsvp.tier };
-      }
 
-      const updated = await tx.rsvp.update({
-        where: { id },
-        data: {
-          status: 'CONFIRMED',
-          waitlistPosition: null,
-          offerExpiresAt: null,
-        },
-      });
-
-      console.log(`Offer accepted: RSVP ${id} is now CONFIRMED`);
-      return { expired: false, rsvp: updated };
-    });
+        console.log(`Offer accepted: RSVP ${id} is now CONFIRMED`);
+        return { expired: false, rsvp: updated };
+      },
+    );
 
     if (result.expired) {
       // Reprocess waitlist for the freed slot, then tell the caller
@@ -220,10 +246,12 @@ export class RsvpService {
   async declineOffer(id: string) {
     const rsvp = await this.prisma.client.$transaction(async (tx) => {
       // Lock the row to prevent races with cron expiry
-      const [row] = await tx.$queryRawUnsafe<any[]>(
-        `SELECT * FROM "rsvps" WHERE "id" = $1 FOR UPDATE`,
-        id,
-      );
+      const [row] = await tx.$queryRaw<LockedOfferRow[]>(Prisma.sql`
+        SELECT "id", "eventId", "tier", "status", "offerExpiresAt"
+        FROM "rsvps"
+        WHERE "id" = ${id}
+        FOR UPDATE
+      `);
       if (!row) throw new NotFoundException(`RSVP ${id} not found`);
 
       if (row.status !== 'OFFERED') {

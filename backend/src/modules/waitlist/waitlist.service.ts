@@ -48,7 +48,9 @@ export class WaitlistService {
   ): Promise<boolean> {
     return this.prisma.client.$transaction(async (tx) => {
       // Serialize capacity allocation per event to prevent duplicate offers.
-      const [event] = await tx.$queryRaw<{ id: string; totalCapacity: number }[]>(
+      const [event] = await tx.$queryRaw<
+        { id: string; totalCapacity: number }[]
+      >(
         Prisma.sql`
           SELECT "id", "totalCapacity"
           FROM "events"
@@ -96,9 +98,10 @@ export class WaitlistService {
             FOR UPDATE SKIP LOCKED
           `;
 
-      const candidates = await tx.$queryRaw<
-        { id: string; userId: string; tier: Tier }[]
-      >(candidateQuery);
+      const candidates =
+        await tx.$queryRaw<{ id: string; userId: string; tier: Tier }[]>(
+          candidateQuery,
+        );
 
       if (candidates.length === 0) return false;
 
