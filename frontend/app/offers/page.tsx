@@ -33,24 +33,28 @@ export default function OffersPage() {
   }
 
   return (
-    <main className="min-h-screen text-slate-100">
-      <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
-        <div className="flex items-center justify-between">
-          <Link href="/" className="btn-ghost">
+    <main className="page-shell">
+      <div className="page-container space-y-6 sm:space-y-8">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Link href="/" className="btn-ghost w-fit">
             &larr; Back home
           </Link>
-          <span className="text-xs uppercase tracking-[0.18em] text-slate-400">
+          <span className="section-label">
             Offers
           </span>
         </div>
 
-        <div className="glass-panel rounded-3xl p-6 sm:p-7 space-y-6">
+        <div className="page-card space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-semibold text-white">Your active offers</h1>
-              <p className="text-slate-300 text-sm">Search by user ID to review and act before they expire.</p>
+            <div className="space-y-1">
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-[-0.03em] text-white">
+                Your active offers
+              </h1>
+              <p className="page-subtitle">
+                Search by user ID to review and act before they expire.
+              </p>
             </div>
-            <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row">
               <input
                 placeholder="Your User ID"
                 value={userId}

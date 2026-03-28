@@ -68,7 +68,7 @@ export default function OfferCard({
 
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-5 space-y-4 shadow-lg shadow-cyan-500/10">
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <p className="font-semibold text-white">Offer</p>
           <p className="text-xs text-slate-400">
@@ -82,7 +82,7 @@ export default function OfferCard({
         </span>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <button
           disabled={acting || expired}
           onClick={accept}

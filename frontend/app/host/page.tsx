@@ -44,23 +44,27 @@ export default function HostPage() {
   }
 
   return (
-    <main className="min-h-screen text-slate-100">
-      <div className="max-w-5xl mx-auto px-6 py-10 space-y-8">
-        <div className="flex items-center justify-between">
-          <Link href="/" className="btn-ghost">
+    <main className="page-shell">
+      <div className="page-container space-y-6 sm:space-y-8">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Link href="/" className="btn-ghost w-fit">
             &larr; Back home
           </Link>
-          <span className="text-xs uppercase tracking-[0.18em] text-slate-400">
+          <span className="section-label">
             Host Dashboard
           </span>
         </div>
 
         {!selected && (
-          <div className="glass-panel rounded-3xl p-6 sm:p-7 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-semibold text-white">Manage events</h1>
-                <p className="text-slate-300 text-sm">Choose an event to view stats and adjust capacity.</p>
+          <div className="page-card space-y-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-1">
+                <h1 className="text-2xl sm:text-3xl font-semibold tracking-[-0.03em] text-white">
+                  Manage events
+                </h1>
+                <p className="page-subtitle">
+                  Choose an event to view stats and adjust capacity.
+                </p>
               </div>
               <span className="rounded-full bg-sky-500/15 text-sky-100 border border-sky-400/40 text-xs px-3 py-1">
                 Host view
@@ -71,10 +75,10 @@ export default function HostPage() {
                 <button
                   key={ev.id}
                   onClick={() => selectEvent(ev.id)}
-                  className="group w-full text-left rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:border-cyan-300/60 hover:bg-white/8"
+                  className="group w-full text-left rounded-2xl border border-white/10 bg-white/5 p-4 transition duration-200 hover:-translate-y-0.5 hover:border-cyan-300/60 hover:bg-white/8"
                 >
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="space-y-1">
                       <p className="font-semibold text-white">{ev.name}</p>
                       <p className="text-xs text-slate-400">Capacity: {ev.totalCapacity}</p>
                     </div>
@@ -89,18 +93,20 @@ export default function HostPage() {
         )}
 
         {selected && (
-          <div className="glass-panel rounded-3xl p-6 sm:p-7 space-y-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm text-slate-400">Active event</p>
-                <h2 className="text-2xl font-semibold text-white">{selected.name}</h2>
+          <div className="page-card space-y-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-1">
+                <p className="section-label">Active event</p>
+                <h2 className="text-2xl sm:text-3xl font-semibold tracking-[-0.03em] text-white">
+                  {selected.name}
+                </h2>
               </div>
-              <button onClick={() => setSelected(null)} className="btn-ghost">
+              <button onClick={() => setSelected(null)} className="btn-ghost w-fit">
                 Switch event
               </button>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+            <div className="grid grid-cols-2 gap-3 text-sm lg:grid-cols-5">
               <Stat label="Total Capacity" value={selected.totalCapacity} />
               <Stat label="Confirmed" value={selected.confirmed} />
               <Stat label="Available" value={selected.available} />
@@ -108,8 +114,8 @@ export default function HostPage() {
               <Stat label="Active Offers" value={selected.offered} />
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5 space-y-4">
-              <div className="flex items-center justify-between">
+            <div className="surface-row space-y-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-slate-300">Adjust capacity by +10 to unlock waitlisted seats.</p>
                 <span className="text-xs text-slate-400">Auto-process waitlist</span>
               </div>
@@ -137,7 +143,7 @@ export default function HostPage() {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
+    <div className="stat-tile">
       <p className="text-xs text-slate-400">{label}</p>
       <p className="text-xl font-semibold text-white">{value}</p>
     </div>

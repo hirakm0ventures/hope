@@ -55,25 +55,27 @@ export default function BookingPage() {
   }
 
   return (
-    <main className="min-h-screen text-slate-100">
-      <div className="max-w-5xl mx-auto px-6 py-10 space-y-8">
-        <div className="flex items-center justify-between">
-          <Link href="/" className="btn-ghost">
+    <main className="page-shell">
+      <div className="page-container space-y-6 sm:space-y-8">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Link href="/" className="btn-ghost w-fit">
             &larr; Back home
           </Link>
-          <span className="text-xs uppercase tracking-[0.18em] text-slate-400">
+          <span className="section-label">
             Booking Flow
           </span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr,1.05fr] gap-6">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[0.95fr,1.05fr]">
           {/* Event list */}
           {!selectedEvent && (
-            <div className="glass-panel rounded-3xl p-6 sm:p-7 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-2xl font-semibold text-white">Book a seat</h1>
-                  <p className="text-slate-300 text-sm">
+            <div className="page-card space-y-5">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <h1 className="text-2xl sm:text-3xl font-semibold tracking-[-0.03em] text-white">
+                    Book a seat
+                  </h1>
+                  <p className="page-subtitle">
                     Pick an event to view live capacity and tiers.
                   </p>
                 </div>
@@ -82,7 +84,7 @@ export default function BookingPage() {
                 </span>
               </div>
 
-              <div className="space-y-3">
+              <div className="grid gap-3">
                 {events.length === 0 && (
                   <p className="text-slate-400 text-sm">No events found.</p>
                 )}
@@ -90,10 +92,10 @@ export default function BookingPage() {
                   <button
                     key={ev.id}
                     onClick={() => selectEvent(ev.id)}
-                    className="group w-full text-left rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:border-cyan-300/60 hover:bg-white/8"
+                    className="group w-full text-left rounded-2xl border border-white/10 bg-white/5 p-4 transition duration-200 hover:-translate-y-0.5 hover:border-cyan-300/60 hover:bg-white/8"
                   >
-                    <div className="flex items-center justify-between">
-                      <div>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="space-y-1">
                         <p className="font-semibold text-white">{ev.name}</p>
                         <p className="text-xs text-slate-400">Capacity: {ev.totalCapacity}</p>
                       </div>
@@ -109,20 +111,20 @@ export default function BookingPage() {
 
           {/* Selected event detail */}
           {selectedEvent && (
-            <div className="glass-panel rounded-3xl p-6 sm:p-7 space-y-6">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm text-slate-400">Selected event</p>
-                  <h2 className="text-2xl font-semibold text-white">
+            <div className="page-card space-y-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-1">
+                  <p className="section-label">Selected event</p>
+                  <h2 className="text-2xl sm:text-3xl font-semibold tracking-[-0.03em] text-white">
                     {selectedEvent.name}
                   </h2>
                 </div>
-                <button onClick={() => setSelectedEvent(null)} className="btn-ghost">
+                <button onClick={() => setSelectedEvent(null)} className="btn-ghost w-fit">
                   Switch event
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <div className="grid grid-cols-2 gap-3 text-sm lg:grid-cols-4">
                 <Stat label="Total Capacity" value={selectedEvent.totalCapacity} />
                 <Stat label="Confirmed" value={selectedEvent.confirmed} />
                 <Stat label="Available" value={selectedEvent.available} />
@@ -130,8 +132,8 @@ export default function BookingPage() {
               </div>
 
               {/* Book form */}
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5 space-y-4">
-                <div className="flex items-center justify-between">
+              <div className="surface-row space-y-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <h3 className="font-semibold text-white">
                     {selectedEvent.available > 0 ? "Book a Ticket" : "Join Waitlist"}
                   </h3>
@@ -188,7 +190,7 @@ export default function BookingPage() {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
+    <div className="stat-tile">
       <p className="text-xs text-slate-400">{label}</p>
       <p className="text-xl font-semibold text-white">{value}</p>
     </div>
