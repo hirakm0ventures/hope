@@ -31,7 +31,7 @@ export interface EventStats extends Event {
   available: number;
 }
 
-export type Tier = "GENERAL" | "VIP" | "EARLY_BIRD";
+export type Tier = "GENERAL" | "VIP" | "EARLY_BIRD" | "ANY";
 export type RsvpStatus =
   | "CONFIRMED"
   | "WAITLISTED"

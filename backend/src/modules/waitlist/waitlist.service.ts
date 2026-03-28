@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { Prisma, Tier } from '../../../generated/prisma/client.js';
 
-const OFFER_EXPIRY_MINUTES = 15;
+export const OFFER_EXPIRY_MINUTES = 15;
+type OfferTierHint = Tier | null;
 
 @Injectable()
 export class WaitlistService {
@@ -12,11 +14,27 @@ export class WaitlistService {
    * Process waitlist for an event: find next eligible WAITLISTED user,
    * lock the row, and transition to OFFERED with expiration.
    */
-  async processWaitlist(eventId: string): Promise<void> {
+  async processWaitlist(
+    eventId: string,
+    preferredTiers: OfferTierHint[] = [],
+  ): Promise<void> {
+    const queue = [...preferredTiers];
+
     // Keep offering until no capacity or no waitlisted users
     while (true) {
-      const offered = await this.offerNextSlot(eventId);
-      if (!offered) break;
+      const usingHint = queue.length > 0;
+      const preferredTier = usingHint ? (queue.shift() ?? null) : null;
+      const offered = await this.offerNextSlot(eventId, preferredTier);
+      if (offered) {
+        continue;
+      }
+      if (usingHint) {
+        if (queue.length > 0) {
+          continue;
+        }
+        break;
+      }
+      break;
     }
   }
 
@@ -24,11 +42,23 @@ export class WaitlistService {
    * Attempt to offer one slot to the next waitlisted user.
    * Returns true if an offer was made, false if no capacity or no users.
    */
-  private async offerNextSlot(eventId: string): Promise<boolean> {
+  private async offerNextSlot(
+    eventId: string,
+    preferredTier: OfferTierHint,
+  ): Promise<boolean> {
     return this.prisma.client.$transaction(async (tx) => {
-      // Check available capacity (confirmed + offered vs total)
-      const event = await tx.event.findUnique({ where: { id: eventId } });
-      if (!event) return false;
+      // Serialize capacity allocation per event to prevent duplicate offers.
+      const [event] = await tx.$queryRaw<{ id: string; totalCapacity: number }[]>(
+        Prisma.sql`
+          SELECT "id", "totalCapacity"
+          FROM "events"
+          WHERE "id" = ${eventId}
+          FOR UPDATE
+        `,
+      );
+      if (!event) {
+        return false;
+      }
 
       const activeCount = await tx.rsvp.count({
         where: {
@@ -39,16 +69,36 @@ export class WaitlistService {
 
       if (activeCount >= event.totalCapacity) return false;
 
-      // Find next eligible waitlisted user using raw query for row lock
-      const candidates = await tx.$queryRawUnsafe<any[]>(
-        `SELECT * FROM "rsvps"
-         WHERE "eventId" = $1
-           AND "status" = 'WAITLISTED'
-         ORDER BY "waitlistPosition" ASC NULLS LAST, "createdAt" ASC
-         LIMIT 1
-         FOR UPDATE SKIP LOCKED`,
-        eventId,
-      );
+      const candidateQuery = preferredTier
+        ? Prisma.sql`
+            SELECT *
+            FROM "rsvps"
+            WHERE "eventId" = ${eventId}
+              AND "status" = 'WAITLISTED'
+              AND ("tier" = ${preferredTier} OR "tier" = 'ANY')
+            ORDER BY
+              CASE
+                WHEN "tier" = ${preferredTier} THEN 0
+                ELSE 1
+              END,
+              "waitlistPosition" ASC NULLS LAST,
+              "createdAt" ASC
+            LIMIT 1
+            FOR UPDATE SKIP LOCKED
+          `
+        : Prisma.sql`
+            SELECT *
+            FROM "rsvps"
+            WHERE "eventId" = ${eventId}
+              AND "status" = 'WAITLISTED'
+            ORDER BY "waitlistPosition" ASC NULLS LAST, "createdAt" ASC
+            LIMIT 1
+            FOR UPDATE SKIP LOCKED
+          `;
+
+      const candidates = await tx.$queryRaw<
+        { id: string; userId: string; tier: Tier }[]
+      >(candidateQuery);
 
       if (candidates.length === 0) return false;
 
@@ -76,34 +126,44 @@ export class WaitlistService {
   @Cron(CronExpression.EVERY_MINUTE)
   async handleExpiredOffers(): Promise<void> {
     const now = new Date();
+    const expired = await this.prisma.client.$transaction(async (tx) => {
+      const staleOffers = await tx.$queryRaw<
+        { id: string; eventId: string; tier: Tier }[]
+      >(Prisma.sql`
+        SELECT "id", "eventId", "tier"
+        FROM "rsvps"
+        WHERE "status" = 'OFFERED'
+          AND "offerExpiresAt" < ${now}
+        ORDER BY "offerExpiresAt" ASC
+        FOR UPDATE SKIP LOCKED
+      `);
 
-    // Find and expire all stale offers
-    const expired = await this.prisma.client.rsvp.findMany({
-      where: {
-        status: 'OFFERED',
-        offerExpiresAt: { lt: now },
-      },
+      for (const offer of staleOffers) {
+        await tx.rsvp.update({
+          where: { id: offer.id },
+          data: {
+            status: 'EXPIRED',
+            offerExpiresAt: null,
+          },
+        });
+      }
+
+      return staleOffers;
     });
 
     if (expired.length === 0) return;
 
-    await this.prisma.client.rsvp.updateMany({
-      where: {
-        status: 'OFFERED',
-        offerExpiresAt: { lt: now },
-      },
-      data: {
-        status: 'EXPIRED',
-        offerExpiresAt: null,
-      },
-    });
-
     console.log(`Expired ${expired.length} offer(s)`);
 
-    // Collect unique event IDs and reprocess their waitlists
-    const eventIds = [...new Set(expired.map((r) => r.eventId))];
-    for (const eventId of eventIds) {
-      await this.processWaitlist(eventId);
+    const grouped = new Map<string, OfferTierHint[]>();
+    for (const offer of expired) {
+      const tiers = grouped.get(offer.eventId) ?? [];
+      tiers.push(offer.tier);
+      grouped.set(offer.eventId, tiers);
+    }
+
+    for (const [eventId, tiers] of grouped) {
+      await this.processWaitlist(eventId, tiers);
     }
   }
 }

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { RsvpStatus } from '../../../generated/prisma/enums.js';
+import { Prisma } from '../../../generated/prisma/client.js';
 import { CreateRsvpDto } from './dto/index.js';
 import { WaitlistService } from '../waitlist/waitlist.service.js';
 
@@ -40,7 +41,14 @@ export class RsvpService {
     const tier = dto.tier ?? 'GENERAL';
 
     return this.prisma.client.$transaction(async (tx) => {
-      const event = await tx.event.findUnique({ where: { id: dto.eventId } });
+      const [event] = await tx.$queryRaw<{ id: string; totalCapacity: number }[]>(
+        Prisma.sql`
+          SELECT "id", "totalCapacity"
+          FROM "events"
+          WHERE "id" = ${dto.eventId}
+          FOR UPDATE
+        `,
+      );
       if (!event) throw new NotFoundException(`Event ${dto.eventId} not found`);
 
       // Check for existing active RSVP by this user for this event
@@ -148,7 +156,9 @@ export class RsvpService {
           result.previousStatus === 'CONFIRMED' ||
           result.previousStatus === 'OFFERED'
         ) {
-          await this.waitlistService.processWaitlist(result.rsvp.eventId);
+          await this.waitlistService.processWaitlist(result.rsvp.eventId, [
+            result.rsvp.tier,
+          ]);
         }
         return result.rsvp;
       });
@@ -179,7 +189,7 @@ export class RsvpService {
           where: { id },
           data: { status: 'EXPIRED', offerExpiresAt: null },
         });
-        return { expired: true, eventId: rsvp.eventId };
+        return { expired: true, eventId: rsvp.eventId, tier: rsvp.tier };
       }
 
       const updated = await tx.rsvp.update({
@@ -197,7 +207,7 @@ export class RsvpService {
 
     if (result.expired) {
       // Reprocess waitlist for the freed slot, then tell the caller
-      await this.waitlistService.processWaitlist(result.eventId);
+      await this.waitlistService.processWaitlist(result.eventId, [result.tier]);
       throw new ConflictException('Offer has expired');
     }
 
@@ -236,7 +246,7 @@ export class RsvpService {
     });
 
     // Process waitlist to offer spot to next user
-    await this.waitlistService.processWaitlist(rsvp.eventId);
+    await this.waitlistService.processWaitlist(rsvp.eventId, [rsvp.tier]);
     return rsvp;
   }
 }

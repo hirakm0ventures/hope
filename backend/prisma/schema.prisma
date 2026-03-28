@@ -16,6 +16,7 @@ enum Tier {
   GENERAL
   VIP
   EARLY_BIRD
+  ANY
 }
 
 enum RsvpStatus {

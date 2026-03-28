@@ -2,6 +2,7 @@ import { Controller, Post, Body } from '@nestjs/common';
 import { NotFoundException, ConflictException } from '@nestjs/common';
 import { JoinWaitlistDto } from './dto/index.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { Prisma } from '../../../generated/prisma/client.js';
 
 @Controller('waitlist')
 export class WaitlistController {
@@ -12,7 +13,14 @@ export class WaitlistController {
     const tier = dto.tier ?? 'GENERAL';
 
     return this.prisma.client.$transaction(async (tx) => {
-      const event = await tx.event.findUnique({ where: { id: dto.eventId } });
+      const [event] = await tx.$queryRaw<{ id: string; totalCapacity: number }[]>(
+        Prisma.sql`
+          SELECT "id", "totalCapacity"
+          FROM "events"
+          WHERE "id" = ${dto.eventId}
+          FOR UPDATE
+        `,
+      );
       if (!event) {
         throw new NotFoundException(`Event ${dto.eventId} not found`);
       }

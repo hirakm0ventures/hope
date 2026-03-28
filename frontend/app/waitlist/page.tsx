@@ -101,6 +101,7 @@ export default function WaitlistPage() {
               <option value="GENERAL">General</option>
               <option value="VIP">VIP</option>
               <option value="EARLY_BIRD">Early Bird</option>
+              <option value="ANY">Any tier</option>
             </select>
           </label>
 

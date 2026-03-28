@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, type Rsvp } from "@/lib/api";
 
 export default function OfferCard({
@@ -17,6 +17,7 @@ export default function OfferCard({
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(
     null,
   );
+  const hasRefreshedAfterExpiry = useRef(false);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -25,7 +26,17 @@ export default function OfferCard({
     return () => clearInterval(id);
   }, [rsvp.offerExpiresAt]);
 
+  useEffect(() => {
+    hasRefreshedAfterExpiry.current = false;
+  }, [rsvp.id, rsvp.offerExpiresAt]);
+
   const expired = remaining <= 0;
+
+  useEffect(() => {
+    if (!expired || hasRefreshedAfterExpiry.current) return;
+    hasRefreshedAfterExpiry.current = true;
+    onAction();
+  }, [expired, onAction]);
 
   async function accept() {
     setActing(true);

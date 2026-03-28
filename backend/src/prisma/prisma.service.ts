@@ -6,10 +6,11 @@ import { PrismaClient } from '../../generated/prisma/client.js';
 @Injectable()
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private _client: InstanceType<typeof PrismaClient>;
+  private readonly pool: Pool;
 
   constructor() {
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    const adapter = new PrismaPg(pool);
+    this.pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const adapter = new PrismaPg(this.pool);
     this._client = new PrismaClient({ adapter });
   }
 
@@ -23,5 +24,6 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleDestroy() {
     await this._client.$disconnect();
+    await this.pool.end();
   }
 }
