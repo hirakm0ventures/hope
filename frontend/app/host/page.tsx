@@ -18,8 +18,17 @@ export default function HostPage() {
     null,
   );
 
-  useEffect(() => {
+  /* Create-event form state */
+  const [newName, setNewName] = useState("");
+  const [newCapacity, setNewCapacity] = useState("100");
+  const [creating, setCreating] = useState(false);
+
+  function loadEvents() {
     api<Event[]>("/events").then(setEvents);
+  }
+
+  useEffect(() => {
+    loadEvents();
   }, []);
 
   async function selectEvent(id: string) {
@@ -75,6 +84,65 @@ export default function HostPage() {
         </div>
 
         {!selected && (
+          <div className="space-y-6">
+            {/* Create Event Form */}
+            <div className="page-card space-y-5">
+              <div className="space-y-1">
+                <h2 className="text-xl font-semibold text-white">Create new event</h2>
+                <p className="page-subtitle">Set a name and initial capacity.</p>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <input
+                  placeholder="Event name"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  className="input-style"
+                />
+                <input
+                  type="number"
+                  min={1}
+                  placeholder="Total capacity"
+                  value={newCapacity}
+                  onChange={(e) => setNewCapacity(e.target.value)}
+                  className="input-style"
+                />
+              </div>
+              <button
+                disabled={creating || !newName.trim() || !newCapacity}
+                onClick={async () => {
+                  setCreating(true);
+                  setMsg(null);
+                  try {
+                    await api("/events", {
+                      method: "POST",
+                      body: JSON.stringify({
+                        name: newName.trim(),
+                        totalCapacity: Number(newCapacity),
+                      }),
+                    });
+                    setMsg({ type: "ok", text: `Event "${newName.trim()}" created!` });
+                    setNewName("");
+                    setNewCapacity("100");
+                    loadEvents();
+                  } catch (e: any) {
+                    setMsg({ type: "err", text: e.message });
+                  } finally {
+                    setCreating(false);
+                  }
+                }}
+                className="w-full btn-primary sm:w-auto"
+              >
+                {creating ? "Creating…" : "Create Event"}
+              </button>
+              {msg && !selected && (
+                <p
+                  className={`rounded-xl border px-4 py-3 text-sm ${msg.type === "ok" ? "border-emerald-300/40 bg-emerald-500/10 text-emerald-50" : "border-rose-300/40 bg-rose-500/10 text-rose-50"}`}
+                >
+                  {msg.text}
+                </p>
+              )}
+            </div>
+
           <div className="page-card space-y-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="space-y-1">
@@ -111,6 +179,7 @@ export default function HostPage() {
                 </button>
               ))}
             </div>
+          </div>
           </div>
         )}
 
