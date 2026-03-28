@@ -7,6 +7,10 @@ import { PrismaService } from './../src/prisma/prisma.service';
 import { WaitlistService } from './../src/modules/waitlist/waitlist.service';
 
 type Tier = 'GENERAL' | 'VIP' | 'EARLY_BIRD' | 'ANY';
+type EventStatsResponse = {
+  available: number;
+  offered: number;
+};
 
 describe('Waitlist engine system validation (e2e)', () => {
   let app: INestApplication<App>;
@@ -55,12 +59,17 @@ describe('Waitlist engine system validation (e2e)', () => {
     const eventIds = events.map((event) => event.id);
 
     if (eventIds.length > 0) {
-      await prisma.client.rsvp.deleteMany({ where: { eventId: { in: eventIds } } });
+      await prisma.client.rsvp.deleteMany({
+        where: { eventId: { in: eventIds } },
+      });
       await prisma.client.event.deleteMany({ where: { id: { in: eventIds } } });
     }
   }
 
-  async function createEvent(totalCapacity: number, name = `qa-event-${Date.now()}`) {
+  async function createEvent(
+    totalCapacity: number,
+    name = `qa-event-${Date.now()}`,
+  ) {
     const response = await request(app.getHttpServer())
       .post('/events')
       .send({ name, totalCapacity })
@@ -104,8 +113,16 @@ describe('Waitlist engine system validation (e2e)', () => {
   it('runs the core lifecycle from booking to waitlist offer acceptance', async () => {
     const event = await createEvent(2, 'qa-core-lifecycle');
 
-    const confirmedOne = await createRsvp(event.id, 'qa-core-confirmed-1', 'VIP');
-    const confirmedTwo = await createRsvp(event.id, 'qa-core-confirmed-2', 'GENERAL');
+    const confirmedOne = await createRsvp(
+      event.id,
+      'qa-core-confirmed-1',
+      'VIP',
+    );
+    const confirmedTwo = await createRsvp(
+      event.id,
+      'qa-core-confirmed-2',
+      'GENERAL',
+    );
     const waitlistedOne = await createRsvp(event.id, 'qa-core-wait-1', 'VIP');
     await createRsvp(event.id, 'qa-core-wait-2', 'ANY');
 
@@ -134,6 +151,19 @@ describe('Waitlist engine system validation (e2e)', () => {
     expect(accepted.offerExpiresAt).toBeNull();
   });
 
+  it('confirms directly from the waitlist endpoint when capacity is still available', async () => {
+    const event = await createEvent(2, 'qa-direct-confirm-from-waitlist');
+
+    const direct = await joinWaitlist(
+      event.id,
+      'qa-direct-confirm-user',
+      'VIP',
+    );
+
+    expect(direct.status).toBe('CONFIRMED');
+    expect(direct.waitlistPosition).toBeNull();
+  });
+
   it('prioritizes exact tier matches, then ANY, for freed slots', async () => {
     const event = await createEvent(1, 'qa-tier-priority');
 
@@ -160,7 +190,11 @@ describe('Waitlist engine system validation (e2e)', () => {
   it('falls back to ANY when no exact tier match exists', async () => {
     const event = await createEvent(1, 'qa-any-fallback');
 
-    const confirmed = await createRsvp(event.id, 'qa-any-confirmed', 'EARLY_BIRD');
+    const confirmed = await createRsvp(
+      event.id,
+      'qa-any-confirmed',
+      'EARLY_BIRD',
+    );
     const general = await joinWaitlist(event.id, 'qa-any-general', 'GENERAL');
     const any = await joinWaitlist(event.id, 'qa-any-any', 'ANY');
 
@@ -201,7 +235,9 @@ describe('Waitlist engine system validation (e2e)', () => {
       orderBy: { createdAt: 'asc' },
     });
 
-    const confirmedCount = rsvps.filter((rsvp) => rsvp.status === 'CONFIRMED').length;
+    const confirmedCount = rsvps.filter(
+      (rsvp) => rsvp.status === 'CONFIRMED',
+    ).length;
     const waitlisted = rsvps.filter((rsvp) => rsvp.status === 'WAITLISTED');
     const positions = waitlisted
       .map((rsvp) => rsvp.waitlistPosition)
@@ -213,18 +249,62 @@ describe('Waitlist engine system validation (e2e)', () => {
     expect(positions).toEqual([1, 2, 3, 4, 5, 6, 7]);
   });
 
+  it('rejects duplicate active RSVPs and invalid offer transitions', async () => {
+    const event = await createEvent(1, 'qa-invalid-transitions');
+
+    const confirmed = await createRsvp(event.id, 'qa-invalid-user', 'GENERAL');
+    await request(app.getHttpServer())
+      .post('/rsvp')
+      .send({
+        userId: 'qa-invalid-user',
+        eventId: event.id,
+        tier: 'GENERAL',
+      })
+      .expect(409);
+
+    const waitlisted = await joinWaitlist(
+      event.id,
+      'qa-invalid-waitlisted',
+      'VIP',
+    );
+
+    await request(app.getHttpServer())
+      .post(`/offers/${waitlisted.id}/accept`)
+      .expect(409);
+
+    await request(app.getHttpServer())
+      .post(`/offers/${waitlisted.id}/decline`)
+      .expect(409);
+
+    await request(app.getHttpServer())
+      .post(`/rsvp/${confirmed.id}/cancel`)
+      .expect(201);
+  });
+
   it('handles simultaneous cancellations without creating duplicate offers', async () => {
     const event = await createEvent(2, 'qa-concurrency-cancel');
 
-    const confirmedOne = await createRsvp(event.id, 'qa-cancel-confirmed-1', 'GENERAL');
-    const confirmedTwo = await createRsvp(event.id, 'qa-cancel-confirmed-2', 'VIP');
+    const confirmedOne = await createRsvp(
+      event.id,
+      'qa-cancel-confirmed-1',
+      'GENERAL',
+    );
+    const confirmedTwo = await createRsvp(
+      event.id,
+      'qa-cancel-confirmed-2',
+      'VIP',
+    );
     const waitOne = await joinWaitlist(event.id, 'qa-cancel-wait-1', 'GENERAL');
     const waitTwo = await joinWaitlist(event.id, 'qa-cancel-wait-2', 'VIP');
     const waitThree = await joinWaitlist(event.id, 'qa-cancel-wait-3', 'ANY');
 
     await Promise.all([
-      request(app.getHttpServer()).post(`/rsvp/${confirmedOne.id}/cancel`).expect(201),
-      request(app.getHttpServer()).post(`/rsvp/${confirmedTwo.id}/cancel`).expect(201),
+      request(app.getHttpServer())
+        .post(`/rsvp/${confirmedOne.id}/cancel`)
+        .expect(201),
+      request(app.getHttpServer())
+        .post(`/rsvp/${confirmedTwo.id}/cancel`)
+        .expect(201),
     ]);
 
     const offered = await prisma.client.rsvp.findMany({
@@ -234,7 +314,9 @@ describe('Waitlist engine system validation (e2e)', () => {
 
     const offeredIds = offered.map((rsvp) => rsvp.id);
     expect(new Set(offeredIds).size).toBe(2);
-    expect(offeredIds).toEqual(expect.arrayContaining([waitOne.id, waitTwo.id]));
+    expect(offeredIds).toEqual(
+      expect.arrayContaining([waitOne.id, waitTwo.id]),
+    );
 
     const untouched = await prisma.client.rsvp.findUniqueOrThrow({
       where: { id: waitThree.id },
@@ -274,8 +356,16 @@ describe('Waitlist engine system validation (e2e)', () => {
   it('moves to the next user when an offered user cancels or declines', async () => {
     const event = await createEvent(1, 'qa-offered-user-actions');
 
-    const confirmed = await createRsvp(event.id, 'qa-actions-confirmed', 'GENERAL');
-    const offered = await joinWaitlist(event.id, 'qa-actions-offered', 'GENERAL');
+    const confirmed = await createRsvp(
+      event.id,
+      'qa-actions-confirmed',
+      'GENERAL',
+    );
+    const offered = await joinWaitlist(
+      event.id,
+      'qa-actions-offered',
+      'GENERAL',
+    );
     const next = await joinWaitlist(event.id, 'qa-actions-next', 'ANY');
 
     await request(app.getHttpServer())
@@ -286,7 +376,9 @@ describe('Waitlist engine system validation (e2e)', () => {
       .post(`/rsvp/${offered.id}/cancel`)
       .expect(201);
 
-    let nextState = await prisma.client.rsvp.findUniqueOrThrow({ where: { id: next.id } });
+    let nextState = await prisma.client.rsvp.findUniqueOrThrow({
+      where: { id: next.id },
+    });
     expect(nextState.status).toBe('OFFERED');
 
     const declineEvent = await createEvent(1, 'qa-offer-decline');
@@ -300,7 +392,11 @@ describe('Waitlist engine system validation (e2e)', () => {
       'qa-decline-offered',
       'GENERAL',
     );
-    const declineNext = await joinWaitlist(declineEvent.id, 'qa-decline-next', 'ANY');
+    const declineNext = await joinWaitlist(
+      declineEvent.id,
+      'qa-decline-next',
+      'ANY',
+    );
 
     await request(app.getHttpServer())
       .post(`/rsvp/${declineConfirmed.id}/cancel`)
@@ -316,11 +412,77 @@ describe('Waitlist engine system validation (e2e)', () => {
     expect(nextState.status).toBe('OFFERED');
   });
 
+  it('returns capacity to general availability when nobody eligible wants the freed tier', async () => {
+    const event = await createEvent(1, 'qa-no-eligible-waitlist');
+
+    const confirmed = await createRsvp(
+      event.id,
+      'qa-no-eligible-confirmed',
+      'VIP',
+    );
+    const generalOnly = await joinWaitlist(
+      event.id,
+      'qa-no-eligible-general',
+      'GENERAL',
+    );
+
+    await request(app.getHttpServer())
+      .post(`/rsvp/${confirmed.id}/cancel`)
+      .expect(201);
+
+    const [statsResponse, stillWaiting] = await Promise.all([
+      request(app.getHttpServer()).get(`/events/${event.id}/stats`).expect(200),
+      prisma.client.rsvp.findUniqueOrThrow({ where: { id: generalOnly.id } }),
+    ]);
+    const stats = statsResponse.body as EventStatsResponse;
+
+    expect(stats.available).toBe(1);
+    expect(stats.offered).toBe(0);
+    expect(stillWaiting.status).toBe('WAITLISTED');
+  });
+
+  it('accepts cleanly just before expiration', async () => {
+    const event = await createEvent(1, 'qa-last-second-accept');
+
+    const confirmed = await createRsvp(
+      event.id,
+      'qa-last-second-confirmed',
+      'VIP',
+    );
+    const offered = await joinWaitlist(
+      event.id,
+      'qa-last-second-offered',
+      'VIP',
+    );
+
+    await request(app.getHttpServer())
+      .post(`/rsvp/${confirmed.id}/cancel`)
+      .expect(201);
+
+    await prisma.client.rsvp.update({
+      where: { id: offered.id },
+      data: { offerExpiresAt: new Date(Date.now() + 5_000) },
+    });
+
+    await request(app.getHttpServer())
+      .post(`/offers/${offered.id}/accept`)
+      .expect(201);
+
+    const accepted = await prisma.client.rsvp.findUniqueOrThrow({
+      where: { id: offered.id },
+    });
+    expect(accepted.status).toBe('CONFIRMED');
+  });
+
   it('triggers multiple offers on capacity increase and leaves slots available without waitlist users', async () => {
     const event = await createEvent(1, 'qa-capacity-increase');
 
     await createRsvp(event.id, 'qa-capacity-confirmed', 'GENERAL');
-    const waitOne = await joinWaitlist(event.id, 'qa-capacity-wait-1', 'GENERAL');
+    const waitOne = await joinWaitlist(
+      event.id,
+      'qa-capacity-wait-1',
+      'GENERAL',
+    );
     const waitTwo = await joinWaitlist(event.id, 'qa-capacity-wait-2', 'ANY');
 
     await request(app.getHttpServer())
@@ -343,12 +505,13 @@ describe('Waitlist engine system validation (e2e)', () => {
       .send({ totalCapacity: 2 })
       .expect(200);
 
-    const stats = await request(app.getHttpServer())
+    const statsResponse = await request(app.getHttpServer())
       .get(`/events/${spareEvent.id}/stats`)
       .expect(200);
+    const stats = statsResponse.body as EventStatsResponse;
 
-    expect(stats.body.available).toBe(1);
-    expect(stats.body.offered).toBe(0);
+    expect(stats.available).toBe(1);
+    expect(stats.offered).toBe(0);
   });
 
   it('expires outstanding offers through the scheduler and promotes the next candidate', async () => {

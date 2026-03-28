@@ -32,7 +32,10 @@ export default function WaitlistPage() {
       });
       setMsg({
         type: "ok",
-        text: `Joined waitlist at position ${rsvp.waitlistPosition} (ID: ${rsvp.id})`,
+        text:
+          rsvp.status === "CONFIRMED"
+            ? `Ticket confirmed immediately. RSVP ID: ${rsvp.id}`
+            : `Joined waitlist at position ${rsvp.waitlistPosition} (ID: ${rsvp.id})`,
       });
     } catch (e: any) {
       setMsg({ type: "err", text: e.message });
