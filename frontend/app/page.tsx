@@ -5,6 +5,7 @@ const routes = [
   { href: "/waitlist", label: "Waitlist", description: "Join the waitlist for fully-booked events" },
   { href: "/offers", label: "Offers", description: "View released waitlist offers" },
   { href: "/my-tickets", label: "My Tickets", description: "Manage your confirmed tickets" },
+  { href: "/host", label: "Host Dashboard", description: "Manage event capacity and view stats" },
 ];
 
 export default function Home() {

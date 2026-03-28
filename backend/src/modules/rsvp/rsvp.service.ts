@@ -92,6 +92,15 @@ export class RsvpService {
     return rsvp;
   }
 
+  async findByUser(userId: string, eventId?: string) {
+    const where: any = { userId };
+    if (eventId) where.eventId = eventId;
+    return this.prisma.client.rsvp.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   /**
    * Cancel an RSVP. If it was CONFIRMED, trigger waitlist processing.
    */

@@ -11,9 +11,19 @@ export class EventsController {
     return this.eventsService.create(dto);
   }
 
+  @Get()
+  findAll() {
+    return this.eventsService.findAll();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.eventsService.findOne(id);
+  }
+
+  @Get(':id/stats')
+  getStats(@Param('id') id: string) {
+    return this.eventsService.getStats(id);
   }
 
   @Patch(':id/capacity')

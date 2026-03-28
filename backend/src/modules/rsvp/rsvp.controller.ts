@@ -1,4 +1,4 @@
-import { Controller, Post, Param, Body } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, Query } from '@nestjs/common';
 import { RsvpService } from './rsvp.service.js';
 import { CreateRsvpDto } from './dto/index.js';
 
@@ -9,6 +9,16 @@ export class RsvpController {
   @Post('rsvp')
   create(@Body() dto: CreateRsvpDto) {
     return this.rsvpService.create(dto);
+  }
+
+  @Get('rsvp/user/:userId')
+  findByUser(@Param('userId') userId: string, @Query('eventId') eventId?: string) {
+    return this.rsvpService.findByUser(userId, eventId);
+  }
+
+  @Get('rsvp/:id')
+  findOne(@Param('id') id: string) {
+    return this.rsvpService.findOne(id);
   }
 
   @Post('rsvp/:id/cancel')
