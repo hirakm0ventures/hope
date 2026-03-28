@@ -10,10 +10,14 @@ export default function BookingPage() {
   const [userId, setUserId] = useState("");
   const [tier, setTier] = useState<string>("GENERAL");
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(
+    null,
+  );
 
   useEffect(() => {
-    api<Event[]>("/events").then(setEvents).catch(() => {});
+    api<Event[]>("/events")
+      .then(setEvents)
+      .catch(() => {});
   }, []);
 
   async function selectEvent(id: string) {
@@ -29,7 +33,11 @@ export default function BookingPage() {
     try {
       const rsvp = await api<Rsvp>("/rsvp", {
         method: "POST",
-        body: JSON.stringify({ userId: userId.trim(), eventId: selectedEvent.id, tier }),
+        body: JSON.stringify({
+          userId: userId.trim(),
+          eventId: selectedEvent.id,
+          tier,
+        }),
       });
       setMsg({
         type: "ok",
@@ -48,14 +56,18 @@ export default function BookingPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 p-8 max-w-2xl mx-auto">
-      <Link href="/" className="text-sm text-blue-600 hover:underline">&larr; Home</Link>
+      <Link href="/" className="text-sm text-blue-600 hover:underline">
+        &larr; Home
+      </Link>
       <h1 className="text-3xl font-bold text-gray-900 mt-4 mb-6">Booking</h1>
 
       {/* Event list */}
       {!selectedEvent && (
         <div className="space-y-3">
           <p className="text-gray-500 text-sm mb-2">Select an event:</p>
-          {events.length === 0 && <p className="text-gray-400">No events found.</p>}
+          {events.length === 0 && (
+            <p className="text-gray-400">No events found.</p>
+          )}
           {events.map((ev) => (
             <button
               key={ev.id}
@@ -63,7 +75,9 @@ export default function BookingPage() {
               className="w-full text-left rounded-xl border border-gray-200 bg-white p-4 hover:shadow transition-shadow"
             >
               <p className="font-semibold text-gray-800">{ev.name}</p>
-              <p className="text-xs text-gray-400">Capacity: {ev.totalCapacity}</p>
+              <p className="text-xs text-gray-400">
+                Capacity: {ev.totalCapacity}
+              </p>
             </button>
           ))}
         </div>
@@ -72,14 +86,22 @@ export default function BookingPage() {
       {/* Selected event detail */}
       {selectedEvent && (
         <div className="space-y-4">
-          <button onClick={() => setSelectedEvent(null)} className="text-sm text-blue-600 hover:underline">
+          <button
+            onClick={() => setSelectedEvent(null)}
+            className="text-sm text-blue-600 hover:underline"
+          >
             &larr; Back to events
           </button>
 
           <div className="rounded-xl border border-gray-200 bg-white p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">{selectedEvent.name}</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-3">
+              {selectedEvent.name}
+            </h2>
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <Stat label="Total Capacity" value={selectedEvent.totalCapacity} />
+              <Stat
+                label="Total Capacity"
+                value={selectedEvent.totalCapacity}
+              />
               <Stat label="Confirmed" value={selectedEvent.confirmed} />
               <Stat label="Available" value={selectedEvent.available} />
               <Stat label="Waitlisted" value={selectedEvent.waitlisted} />
@@ -122,7 +144,9 @@ export default function BookingPage() {
             </button>
 
             {msg && (
-              <p className={`text-sm ${msg.type === "ok" ? "text-green-600" : "text-red-600"}`}>
+              <p
+                className={`text-sm ${msg.type === "ok" ? "text-green-600" : "text-red-600"}`}
+              >
                 {msg.text}
               </p>
             )}

@@ -22,7 +22,9 @@ export default function MyTicketsPage() {
     if (!userId.trim()) return;
     setLoading(true);
     try {
-      setTickets(await api<Rsvp[]>(`/rsvp/user/${encodeURIComponent(userId.trim())}`));
+      setTickets(
+        await api<Rsvp[]>(`/rsvp/user/${encodeURIComponent(userId.trim())}`),
+      );
       setSearched(true);
     } catch {
       setTickets([]);
@@ -42,7 +44,9 @@ export default function MyTicketsPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 p-8 max-w-2xl mx-auto">
-      <Link href="/" className="text-sm text-blue-600 hover:underline">&larr; Home</Link>
+      <Link href="/" className="text-sm text-blue-600 hover:underline">
+        &larr; Home
+      </Link>
       <h1 className="text-3xl font-bold text-gray-900 mt-4 mb-6">My Tickets</h1>
 
       <div className="flex gap-2 mb-6">
@@ -85,7 +89,9 @@ export default function MyTicketsPage() {
                 RSVP {t.id.slice(0, 8)}… &middot; Event {t.eventId.slice(0, 8)}…
               </p>
               {t.waitlistPosition && (
-                <p className="text-xs text-gray-400">Position: #{t.waitlistPosition}</p>
+                <p className="text-xs text-gray-400">
+                  Position: #{t.waitlistPosition}
+                </p>
               )}
             </div>
 

@@ -20,7 +20,9 @@ export class EventsService {
   }
 
   async findAll() {
-    return this.prisma.client.event.findMany({ orderBy: { createdAt: 'desc' } });
+    return this.prisma.client.event.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   async findOne(id: string) {
@@ -32,9 +34,15 @@ export class EventsService {
   async getStats(id: string) {
     const event = await this.findOne(id);
     const [confirmed, waitlisted, offered] = await Promise.all([
-      this.prisma.client.rsvp.count({ where: { eventId: id, status: 'CONFIRMED' } }),
-      this.prisma.client.rsvp.count({ where: { eventId: id, status: 'WAITLISTED' } }),
-      this.prisma.client.rsvp.count({ where: { eventId: id, status: 'OFFERED' } }),
+      this.prisma.client.rsvp.count({
+        where: { eventId: id, status: 'CONFIRMED' },
+      }),
+      this.prisma.client.rsvp.count({
+        where: { eventId: id, status: 'WAITLISTED' },
+      }),
+      this.prisma.client.rsvp.count({
+        where: { eventId: id, status: 'OFFERED' },
+      }),
     ]);
     return {
       ...event,

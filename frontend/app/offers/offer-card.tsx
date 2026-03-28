@@ -10,9 +10,13 @@ export default function OfferCard({
   rsvp: Rsvp;
   onAction: () => void;
 }) {
-  const [remaining, setRemaining] = useState<number>(calcRemaining(rsvp.offerExpiresAt));
+  const [remaining, setRemaining] = useState<number>(
+    calcRemaining(rsvp.offerExpiresAt),
+  );
   const [acting, setActing] = useState(false);
-  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(
+    null,
+  );
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -56,7 +60,9 @@ export default function OfferCard({
       <div className="flex justify-between items-start">
         <div>
           <p className="font-semibold text-gray-800">Offer</p>
-          <p className="text-xs text-gray-400">RSVP {rsvp.id.slice(0, 8)}… &middot; {rsvp.tier}</p>
+          <p className="text-xs text-gray-400">
+            RSVP {rsvp.id.slice(0, 8)}… &middot; {rsvp.tier}
+          </p>
         </div>
         <span
           className={`text-sm font-mono tabular-nums ${expired ? "text-red-500" : "text-green-600"}`}
@@ -83,7 +89,9 @@ export default function OfferCard({
       </div>
 
       {msg && (
-        <p className={`text-sm ${msg.type === "ok" ? "text-green-600" : "text-red-600"}`}>
+        <p
+          className={`text-sm ${msg.type === "ok" ? "text-green-600" : "text-red-600"}`}
+        >
           {msg.text}
         </p>
       )}
@@ -93,7 +101,10 @@ export default function OfferCard({
 
 function calcRemaining(expiresAt: string | null): number {
   if (!expiresAt) return 0;
-  return Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
+  return Math.max(
+    0,
+    Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000),
+  );
 }
 
 function formatTime(seconds: number): string {

@@ -12,7 +12,10 @@ export class RsvpController {
   }
 
   @Get('rsvp/user/:userId')
-  findByUser(@Param('userId') userId: string, @Query('eventId') eventId?: string) {
+  findByUser(
+    @Param('userId') userId: string,
+    @Query('eventId') eventId?: string,
+  ) {
     return this.rsvpService.findByUser(userId, eventId);
   }
 

@@ -15,7 +15,9 @@ export default function OffersPage() {
     if (!userId.trim()) return;
     setLoading(true);
     try {
-      const all = await api<Rsvp[]>(`/rsvp/user/${encodeURIComponent(userId.trim())}`);
+      const all = await api<Rsvp[]>(
+        `/rsvp/user/${encodeURIComponent(userId.trim())}`,
+      );
       setOffers(all.filter((r) => r.status === "OFFERED"));
       setSearched(true);
     } catch {
@@ -32,7 +34,9 @@ export default function OffersPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 p-8 max-w-lg mx-auto">
-      <Link href="/" className="text-sm text-blue-600 hover:underline">&larr; Home</Link>
+      <Link href="/" className="text-sm text-blue-600 hover:underline">
+        &larr; Home
+      </Link>
       <h1 className="text-3xl font-bold text-gray-900 mt-4 mb-6">My Offers</h1>
 
       <div className="flex gap-2 mb-6">

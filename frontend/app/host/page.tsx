@@ -8,7 +8,9 @@ export default function HostPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [selected, setSelected] = useState<EventStats | null>(null);
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(
+    null,
+  );
 
   useEffect(() => {
     api<Event[]>("/events").then(setEvents);
@@ -29,7 +31,10 @@ export default function HostPage() {
         method: "PATCH",
         body: JSON.stringify({ totalCapacity: selected.totalCapacity + 10 }),
       });
-      setMsg({ type: "ok", text: "Capacity increased by 10. Waitlist processed." });
+      setMsg({
+        type: "ok",
+        text: "Capacity increased by 10. Waitlist processed.",
+      });
       await selectEvent(selected.id);
     } catch (e: any) {
       setMsg({ type: "err", text: e.message });
@@ -40,8 +45,12 @@ export default function HostPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 p-8 max-w-2xl mx-auto">
-      <Link href="/" className="text-sm text-blue-600 hover:underline">&larr; Home</Link>
-      <h1 className="text-3xl font-bold text-gray-900 mt-4 mb-6">Host Dashboard</h1>
+      <Link href="/" className="text-sm text-blue-600 hover:underline">
+        &larr; Home
+      </Link>
+      <h1 className="text-3xl font-bold text-gray-900 mt-4 mb-6">
+        Host Dashboard
+      </h1>
 
       {!selected && (
         <div className="space-y-3">
@@ -53,7 +62,9 @@ export default function HostPage() {
               className="w-full text-left rounded-xl border border-gray-200 bg-white p-4 hover:shadow transition-shadow"
             >
               <p className="font-semibold text-gray-800">{ev.name}</p>
-              <p className="text-xs text-gray-400">Capacity: {ev.totalCapacity}</p>
+              <p className="text-xs text-gray-400">
+                Capacity: {ev.totalCapacity}
+              </p>
             </button>
           ))}
         </div>
@@ -61,12 +72,17 @@ export default function HostPage() {
 
       {selected && (
         <div className="space-y-4">
-          <button onClick={() => setSelected(null)} className="text-sm text-blue-600 hover:underline">
+          <button
+            onClick={() => setSelected(null)}
+            className="text-sm text-blue-600 hover:underline"
+          >
             &larr; Back to events
           </button>
 
           <div className="rounded-xl border border-gray-200 bg-white p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">{selected.name}</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              {selected.name}
+            </h2>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <Stat label="Total Capacity" value={selected.totalCapacity} />
               <Stat label="Confirmed" value={selected.confirmed} />
@@ -85,7 +101,9 @@ export default function HostPage() {
           </button>
 
           {msg && (
-            <p className={`text-sm ${msg.type === "ok" ? "text-green-600" : "text-red-600"}`}>
+            <p
+              className={`text-sm ${msg.type === "ok" ? "text-green-600" : "text-red-600"}`}
+            >
               {msg.text}
             </p>
           )}

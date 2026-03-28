@@ -10,7 +10,9 @@ export default function WaitlistPage() {
   const [userId, setUserId] = useState("");
   const [tier, setTier] = useState("GENERAL");
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(
+    null,
+  );
 
   useEffect(() => {
     api<Event[]>("/events").then((evts) => {
@@ -41,8 +43,12 @@ export default function WaitlistPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 p-8 max-w-lg mx-auto">
-      <Link href="/" className="text-sm text-blue-600 hover:underline">&larr; Home</Link>
-      <h1 className="text-3xl font-bold text-gray-900 mt-4 mb-6">Join Waitlist</h1>
+      <Link href="/" className="text-sm text-blue-600 hover:underline">
+        &larr; Home
+      </Link>
+      <h1 className="text-3xl font-bold text-gray-900 mt-4 mb-6">
+        Join Waitlist
+      </h1>
 
       <div className="rounded-xl border border-gray-200 bg-white p-6 space-y-4">
         <label className="block">
@@ -53,7 +59,9 @@ export default function WaitlistPage() {
             className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
           >
             {events.map((ev) => (
-              <option key={ev.id} value={ev.id}>{ev.name}</option>
+              <option key={ev.id} value={ev.id}>
+                {ev.name}
+              </option>
             ))}
           </select>
         </label>
@@ -90,7 +98,9 @@ export default function WaitlistPage() {
         </button>
 
         {msg && (
-          <p className={`text-sm ${msg.type === "ok" ? "text-green-600" : "text-red-600"}`}>
+          <p
+            className={`text-sm ${msg.type === "ok" ? "text-green-600" : "text-red-600"}`}
+          >
             {msg.text}
           </p>
         )}
