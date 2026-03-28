@@ -1,8 +1,5 @@
 import { Controller, Post, Body } from '@nestjs/common';
-import {
-  NotFoundException,
-  ConflictException,
-} from '@nestjs/common';
+import { NotFoundException, ConflictException } from '@nestjs/common';
 import { JoinWaitlistDto } from './dto/index.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
