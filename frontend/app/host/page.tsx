@@ -78,9 +78,7 @@ export default function HostPage() {
           <Link href="/" className="btn-ghost w-fit">
             &larr; Back home
           </Link>
-          <span className="section-label">
-            Host Dashboard
-          </span>
+          <span className="section-label">Host Dashboard</span>
         </div>
 
         {!selected && (
@@ -88,8 +86,12 @@ export default function HostPage() {
             {/* Create Event Form */}
             <div className="page-card space-y-5">
               <div className="space-y-1">
-                <h2 className="text-xl font-semibold text-white">Create new event</h2>
-                <p className="page-subtitle">Set a name and initial capacity.</p>
+                <h2 className="text-xl font-semibold text-white">
+                  Create new event
+                </h2>
+                <p className="page-subtitle">
+                  Set a name and initial capacity.
+                </p>
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <input
@@ -120,7 +122,10 @@ export default function HostPage() {
                         totalCapacity: Number(newCapacity),
                       }),
                     });
-                    setMsg({ type: "ok", text: `Event "${newName.trim()}" created!` });
+                    setMsg({
+                      type: "ok",
+                      text: `Event "${newName.trim()}" created!`,
+                    });
                     setNewName("");
                     setNewCapacity("100");
                     loadEvents();
@@ -143,43 +148,45 @@ export default function HostPage() {
               )}
             </div>
 
-          <div className="page-card space-y-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="space-y-1">
-                <h1 className="text-2xl sm:text-3xl font-semibold tracking-[-0.03em] text-white">
-                  Manage events
-                </h1>
-                <p className="page-subtitle">
-                  Choose an event to view stats and adjust capacity.
-                </p>
+            <div className="page-card space-y-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-1">
+                  <h1 className="text-2xl sm:text-3xl font-semibold tracking-[-0.03em] text-white">
+                    Manage events
+                  </h1>
+                  <p className="page-subtitle">
+                    Choose an event to view stats and adjust capacity.
+                  </p>
+                </div>
+                <span className="rounded-full bg-sky-500/15 text-sky-100 border border-sky-400/40 text-xs px-3 py-1">
+                  Host view
+                </span>
               </div>
-              <span className="rounded-full bg-sky-500/15 text-sky-100 border border-sky-400/40 text-xs px-3 py-1">
-                Host view
-              </span>
-            </div>
-            <div className="grid gap-3">
-              {events.map((ev) => (
-                <button
-                  key={ev.id}
-                  onClick={() => {
-                    setMsg(null);
-                    void selectEvent(ev.id);
-                  }}
-                  className="group w-full text-left rounded-2xl border border-white/10 bg-white/5 p-4 transition duration-200 hover:-translate-y-0.5 hover:border-cyan-300/60 hover:bg-white/8"
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <p className="font-semibold text-white">{ev.name}</p>
-                      <p className="text-xs text-slate-400">Capacity: {ev.totalCapacity}</p>
+              <div className="grid gap-3">
+                {events.map((ev) => (
+                  <button
+                    key={ev.id}
+                    onClick={() => {
+                      setMsg(null);
+                      void selectEvent(ev.id);
+                    }}
+                    className="group w-full text-left rounded-2xl border border-white/10 bg-white/5 p-4 transition duration-200 hover:-translate-y-0.5 hover:border-cyan-300/60 hover:bg-white/8"
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <p className="font-semibold text-white">{ev.name}</p>
+                        <p className="text-xs text-slate-400">
+                          Capacity: {ev.totalCapacity}
+                        </p>
+                      </div>
+                      <span className="text-[11px] rounded-full bg-white/5 px-3 py-1 text-slate-300 border border-white/10 group-hover:border-cyan-300/60">
+                        Open
+                      </span>
                     </div>
-                    <span className="text-[11px] rounded-full bg-white/5 px-3 py-1 text-slate-300 border border-white/10 group-hover:border-cyan-300/60">
-                      Open
-                    </span>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
           </div>
         )}
 
@@ -213,8 +220,12 @@ export default function HostPage() {
 
             <div className="surface-row space-y-4">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-slate-300">Adjust capacity by +10 to unlock waitlisted seats.</p>
-                <span className="text-xs text-slate-400">Auto-process waitlist</span>
+                <p className="text-sm text-slate-300">
+                  Adjust capacity by +10 to unlock waitlisted seats.
+                </p>
+                <span className="text-xs text-slate-400">
+                  Auto-process waitlist
+                </span>
               </div>
               <button
                 disabled={loading}
@@ -235,9 +246,12 @@ export default function HostPage() {
             <div className="surface-row space-y-4">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="font-semibold text-white">Waitlist & offer state</p>
+                  <p className="font-semibold text-white">
+                    Waitlist & offer state
+                  </p>
                   <p className="text-sm text-slate-300">
-                    Live queue ordered by active offers first, then FIFO waitlist.
+                    Live queue ordered by active offers first, then FIFO
+                    waitlist.
                   </p>
                 </div>
                 <span className="text-xs text-slate-400">
