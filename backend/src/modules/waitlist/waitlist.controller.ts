@@ -13,7 +13,9 @@ export class WaitlistController {
     const tier = dto.tier ?? 'GENERAL';
 
     return this.prisma.client.$transaction(async (tx) => {
-      const [event] = await tx.$queryRaw<{ id: string; totalCapacity: number }[]>(
+      const [event] = await tx.$queryRaw<
+        { id: string; totalCapacity: number }[]
+      >(
         Prisma.sql`
           SELECT "id", "totalCapacity"
           FROM "events"
