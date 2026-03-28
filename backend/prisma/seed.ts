@@ -23,7 +23,9 @@ async function main() {
       totalCapacity: 100,
     },
   });
-  console.log(`Created event: ${event.name} (capacity: ${event.totalCapacity})`);
+  console.log(
+    `Created event: ${event.name} (capacity: ${event.totalCapacity})`,
+  );
 
   // Create 100 confirmed users
   const confirmedPromises = Array.from({ length: 100 }, (_, i) =>

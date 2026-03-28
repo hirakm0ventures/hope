@@ -30,7 +30,9 @@ let source = readFileSync(clientPath, 'utf8');
 if (source.includes('import.meta.url')) {
   source = source.replace(ESM_BLOCK, CJS_PATCH);
   writeFileSync(clientPath, source, 'utf8');
-  console.log('✔  Patched generated/prisma/client.ts (removed import.meta.url for CJS compatibility)');
+  console.log(
+    '✔  Patched generated/prisma/client.ts (removed import.meta.url for CJS compatibility)',
+  );
 } else {
   console.log('ℹ  generated/prisma/client.ts already patched — skipping');
 }

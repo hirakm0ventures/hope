@@ -57,7 +57,9 @@ export class RsvpService {
             status: 'CONFIRMED',
           },
         });
-        console.log(`RSVP confirmed for user ${dto.userId} on event ${dto.eventId}`);
+        console.log(
+          `RSVP confirmed for user ${dto.userId} on event ${dto.eventId}`,
+        );
         return rsvp;
       }
 
@@ -77,7 +79,9 @@ export class RsvpService {
           waitlistPosition: nextPosition,
         },
       });
-      console.log(`User ${dto.userId} waitlisted at position ${nextPosition} for event ${dto.eventId}`);
+      console.log(
+        `User ${dto.userId} waitlisted at position ${nextPosition} for event ${dto.eventId}`,
+      );
       return rsvp;
     });
   }
@@ -92,33 +96,35 @@ export class RsvpService {
    * Cancel an RSVP. If it was CONFIRMED, trigger waitlist processing.
    */
   async cancel(id: string) {
-    return this.prisma.client.$transaction(async (tx) => {
-      const rsvp = await tx.rsvp.findUnique({ where: { id } });
-      if (!rsvp) throw new NotFoundException(`RSVP ${id} not found`);
+    return this.prisma.client
+      .$transaction(async (tx) => {
+        const rsvp = await tx.rsvp.findUnique({ where: { id } });
+        if (!rsvp) throw new NotFoundException(`RSVP ${id} not found`);
 
-      // Allow cancelling from CONFIRMED or OFFERED
-      if (rsvp.status !== 'CONFIRMED' && rsvp.status !== 'OFFERED') {
-        this.validateTransition(rsvp.status as RsvpStatus, 'CANCELLED');
-      }
+        // Allow cancelling from CONFIRMED or OFFERED
+        if (rsvp.status !== 'CONFIRMED' && rsvp.status !== 'OFFERED') {
+          this.validateTransition(rsvp.status as RsvpStatus, 'CANCELLED');
+        }
 
-      const updated = await tx.rsvp.update({
-        where: { id },
-        data: {
-          status: 'CANCELLED',
-          waitlistPosition: null,
-          offerExpiresAt: null,
-        },
+        const updated = await tx.rsvp.update({
+          where: { id },
+          data: {
+            status: 'CANCELLED',
+            waitlistPosition: null,
+            offerExpiresAt: null,
+          },
+        });
+
+        console.log(`RSVP ${id} cancelled (was ${rsvp.status})`);
+        return { rsvp: updated, previousStatus: rsvp.status };
+      })
+      .then(async (result) => {
+        // After transaction, if was CONFIRMED → process waitlist outside tx
+        if (result.previousStatus === 'CONFIRMED') {
+          await this.waitlistService.processWaitlist(result.rsvp.eventId);
+        }
+        return result.rsvp;
       });
-
-      console.log(`RSVP ${id} cancelled (was ${rsvp.status})`);
-      return { rsvp: updated, previousStatus: rsvp.status };
-    }).then(async (result) => {
-      // After transaction, if was CONFIRMED → process waitlist outside tx
-      if (result.previousStatus === 'CONFIRMED') {
-        await this.waitlistService.processWaitlist(result.rsvp.eventId);
-      }
-      return result.rsvp;
-    });
   }
 
   /**
