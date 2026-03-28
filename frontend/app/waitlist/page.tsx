@@ -42,68 +42,84 @@ export default function WaitlistPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8 max-w-lg mx-auto">
-      <Link href="/" className="text-sm text-blue-600 hover:underline">
-        &larr; Home
-      </Link>
-      <h1 className="text-3xl font-bold text-gray-900 mt-4 mb-6">
-        Join Waitlist
-      </h1>
+    <main className="min-h-screen text-slate-100">
+      <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
+        <div className="flex items-center justify-between">
+          <Link href="/" className="btn-ghost">
+            &larr; Back home
+          </Link>
+          <span className="text-xs uppercase tracking-[0.18em] text-slate-400">
+            Waitlist
+          </span>
+        </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-6 space-y-4">
-        <label className="block">
-          <span className="text-sm text-gray-600">Event</span>
-          <select
-            value={eventId}
-            onChange={(e) => setEventId(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+        <div className="glass-panel rounded-3xl p-6 sm:p-7 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-white">Join the waitlist</h1>
+              <p className="text-slate-300 text-sm">Reserve your place; you will auto-notify when a seat opens.</p>
+            </div>
+            <span className="rounded-full bg-amber-500/15 text-amber-100 border border-amber-400/40 text-xs px-3 py-1">
+              Fair queueing
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label className="space-y-2">
+              <span className="text-sm text-slate-300">Event</span>
+              <select
+                value={eventId}
+                onChange={(e) => setEventId(e.target.value)}
+                className="input-style"
+              >
+                {events.map((ev) => (
+                  <option key={ev.id} value={ev.id}>
+                    {ev.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="space-y-2">
+              <span className="text-sm text-slate-300">User ID</span>
+              <input
+                placeholder="e.g. user-123"
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+                className="input-style"
+              />
+            </label>
+          </div>
+
+          <label className="space-y-2 block">
+            <span className="text-sm text-slate-300">Tier preference</span>
+            <select
+              value={tier}
+              onChange={(e) => setTier(e.target.value)}
+              className="input-style"
+            >
+              <option value="GENERAL">General</option>
+              <option value="VIP">VIP</option>
+              <option value="EARLY_BIRD">Early Bird</option>
+            </select>
+          </label>
+
+          <button
+            disabled={loading || !userId.trim()}
+            onClick={handleJoin}
+            className="w-full btn-primary"
           >
-            {events.map((ev) => (
-              <option key={ev.id} value={ev.id}>
-                {ev.name}
-              </option>
-            ))}
-          </select>
-        </label>
+            {loading ? "Joining…" : "Join Waitlist"}
+          </button>
 
-        <label className="block">
-          <span className="text-sm text-gray-600">User ID</span>
-          <input
-            placeholder="e.g. user-123"
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-          />
-        </label>
-
-        <label className="block">
-          <span className="text-sm text-gray-600">Tier Preference</span>
-          <select
-            value={tier}
-            onChange={(e) => setTier(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-          >
-            <option value="GENERAL">General</option>
-            <option value="VIP">VIP</option>
-            <option value="EARLY_BIRD">Early Bird</option>
-          </select>
-        </label>
-
-        <button
-          disabled={loading || !userId.trim()}
-          onClick={handleJoin}
-          className="w-full rounded-lg bg-gray-900 text-white py-2 text-sm font-medium disabled:opacity-40 hover:bg-gray-800 transition-colors"
-        >
-          {loading ? "Joining…" : "Join Waitlist"}
-        </button>
-
-        {msg && (
-          <p
-            className={`text-sm ${msg.type === "ok" ? "text-green-600" : "text-red-600"}`}
-          >
-            {msg.text}
-          </p>
-        )}
+          {msg && (
+            <p
+              className={`rounded-xl border px-4 py-3 text-sm ${msg.type === "ok" ? "border-emerald-300/40 bg-emerald-500/10 text-emerald-50" : "border-rose-300/40 bg-rose-500/10 text-rose-50"}`}
+            >
+              {msg.text}
+            </p>
+          )}
+        </div>
       </div>
     </main>
   );

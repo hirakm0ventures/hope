@@ -5,11 +5,11 @@ import Link from "next/link";
 import { api, type Rsvp } from "@/lib/api";
 
 const STATUS_COLORS: Record<string, string> = {
-  CONFIRMED: "bg-green-100 text-green-700",
-  WAITLISTED: "bg-yellow-100 text-yellow-700",
-  OFFERED: "bg-blue-100 text-blue-700",
-  EXPIRED: "bg-gray-100 text-gray-500",
-  CANCELLED: "bg-red-100 text-red-600",
+  CONFIRMED: "border border-emerald-300/40 bg-emerald-500/15 text-emerald-100",
+  WAITLISTED: "border border-amber-300/40 bg-amber-500/15 text-amber-100",
+  OFFERED: "border border-cyan-300/40 bg-cyan-500/15 text-cyan-100",
+  EXPIRED: "border border-slate-300/30 bg-slate-500/20 text-slate-200",
+  CANCELLED: "border border-rose-300/40 bg-rose-500/15 text-rose-100",
 };
 
 export default function MyTicketsPage() {
@@ -43,68 +43,82 @@ export default function MyTicketsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8 max-w-2xl mx-auto">
-      <Link href="/" className="text-sm text-blue-600 hover:underline">
-        &larr; Home
-      </Link>
-      <h1 className="text-3xl font-bold text-gray-900 mt-4 mb-6">My Tickets</h1>
+    <main className="min-h-screen text-slate-100">
+      <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
+        <div className="flex items-center justify-between">
+          <Link href="/" className="btn-ghost">
+            &larr; Back home
+          </Link>
+          <span className="text-xs uppercase tracking-[0.18em] text-slate-400">
+            My Tickets
+          </span>
+        </div>
 
-      <div className="flex gap-2 mb-6">
-        <input
-          placeholder="Your User ID"
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && search()}
-          className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
-        />
-        <button
-          onClick={search}
-          disabled={loading}
-          className="rounded-lg bg-gray-900 text-white px-4 py-2 text-sm font-medium disabled:opacity-40"
-        >
-          {loading ? "…" : "Search"}
-        </button>
-      </div>
-
-      {searched && tickets.length === 0 && (
-        <p className="text-gray-400 text-sm">No tickets found.</p>
-      )}
-
-      <div className="space-y-3">
-        {tickets.map((t) => (
-          <div
-            key={t.id}
-            className="rounded-xl border border-gray-200 bg-white p-4 flex items-center justify-between"
-          >
+        <div className="glass-panel rounded-3xl p-6 sm:p-7 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span
-                  className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[t.status] ?? "bg-gray-100 text-gray-600"}`}
-                >
-                  {t.status}
-                </span>
-                <span className="text-xs text-gray-400">{t.tier}</span>
-              </div>
-              <p className="text-xs text-gray-400">
-                RSVP {t.id.slice(0, 8)}… &middot; Event {t.eventId.slice(0, 8)}…
-              </p>
-              {t.waitlistPosition && (
-                <p className="text-xs text-gray-400">
-                  Position: #{t.waitlistPosition}
-                </p>
-              )}
+              <h1 className="text-2xl font-semibold text-white">Manage your tickets</h1>
+              <p className="text-slate-300 text-sm">Lookup by user ID to view confirmed, offered, or waitlisted spots.</p>
             </div>
-
-            {(t.status === "CONFIRMED" || t.status === "OFFERED") && (
+            <div className="flex gap-2 w-full sm:w-auto">
+              <input
+                placeholder="Your User ID"
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && search()}
+                className="input-style"
+              />
               <button
-                onClick={() => cancelRsvp(t.id)}
-                className="text-xs text-red-500 hover:underline"
+                onClick={search}
+                disabled={loading}
+                className="btn-primary whitespace-nowrap"
               >
-                Cancel
+                {loading ? "…" : "Search"}
               </button>
-            )}
+            </div>
           </div>
-        ))}
+
+          {searched && tickets.length === 0 && (
+            <p className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
+              No tickets found for this user.
+            </p>
+          )}
+
+          <div className="space-y-3">
+            {tickets.map((t) => (
+              <div
+                key={t.id}
+                className="rounded-2xl border border-white/10 bg-white/5 p-4 flex items-center justify-between"
+              >
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span
+                      className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLORS[t.status] ?? "border border-white/20 bg-white/10 text-white"}`}
+                    >
+                      {t.status}
+                    </span>
+                    <span className="text-xs text-slate-300">{t.tier}</span>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    RSVP {t.id.slice(0, 8)}… · Event {t.eventId.slice(0, 8)}…
+                  </p>
+                  {t.waitlistPosition && (
+                    <p className="text-xs text-slate-400">Position: #{t.waitlistPosition}</p>
+                  )}
+                </div>
+
+                {(t.status === "CONFIRMED" || t.status === "OFFERED") && (
+                  <button
+                    onClick={() => cancelRsvp(t.id)}
+                    className="text-xs text-rose-200 underline-offset-4 hover:underline"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </main>
   );

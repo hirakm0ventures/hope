@@ -33,37 +33,53 @@ export default function OffersPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8 max-w-lg mx-auto">
-      <Link href="/" className="text-sm text-blue-600 hover:underline">
-        &larr; Home
-      </Link>
-      <h1 className="text-3xl font-bold text-gray-900 mt-4 mb-6">My Offers</h1>
+    <main className="min-h-screen text-slate-100">
+      <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
+        <div className="flex items-center justify-between">
+          <Link href="/" className="btn-ghost">
+            &larr; Back home
+          </Link>
+          <span className="text-xs uppercase tracking-[0.18em] text-slate-400">
+            Offers
+          </span>
+        </div>
 
-      <div className="flex gap-2 mb-6">
-        <input
-          placeholder="Your User ID"
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && search()}
-          className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
-        />
-        <button
-          onClick={search}
-          disabled={loading}
-          className="rounded-lg bg-gray-900 text-white px-4 py-2 text-sm font-medium disabled:opacity-40"
-        >
-          {loading ? "…" : "Search"}
-        </button>
-      </div>
+        <div className="glass-panel rounded-3xl p-6 sm:p-7 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-white">Your active offers</h1>
+              <p className="text-slate-300 text-sm">Search by user ID to review and act before they expire.</p>
+            </div>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <input
+                placeholder="Your User ID"
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && search()}
+                className="input-style"
+              />
+              <button
+                onClick={search}
+                disabled={loading}
+                className="btn-primary whitespace-nowrap"
+              >
+                {loading ? "…" : "Search"}
+              </button>
+            </div>
+          </div>
 
-      {searched && offers.length === 0 && (
-        <p className="text-gray-400 text-sm">No active offers found.</p>
-      )}
+          {searched && offers.length === 0 && (
+            <p className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
+              No active offers found for this user.
+            </p>
+          )}
 
-      <div className="space-y-4">
-        {offers.map((rsvp) => (
-          <OfferCard key={rsvp.id} rsvp={rsvp} onAction={handleAction} />
-        ))}
+          <div className="space-y-4">
+            {offers.map((rsvp) => (
+              <OfferCard key={rsvp.id} rsvp={rsvp} onAction={handleAction} />
+            ))}
+          </div>
+        </div>
       </div>
     </main>
   );

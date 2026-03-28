@@ -55,113 +55,141 @@ export default function BookingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8 max-w-2xl mx-auto">
-      <Link href="/" className="text-sm text-blue-600 hover:underline">
-        &larr; Home
-      </Link>
-      <h1 className="text-3xl font-bold text-gray-900 mt-4 mb-6">Booking</h1>
-
-      {/* Event list */}
-      {!selectedEvent && (
-        <div className="space-y-3">
-          <p className="text-gray-500 text-sm mb-2">Select an event:</p>
-          {events.length === 0 && (
-            <p className="text-gray-400">No events found.</p>
-          )}
-          {events.map((ev) => (
-            <button
-              key={ev.id}
-              onClick={() => selectEvent(ev.id)}
-              className="w-full text-left rounded-xl border border-gray-200 bg-white p-4 hover:shadow transition-shadow"
-            >
-              <p className="font-semibold text-gray-800">{ev.name}</p>
-              <p className="text-xs text-gray-400">
-                Capacity: {ev.totalCapacity}
-              </p>
-            </button>
-          ))}
+    <main className="min-h-screen text-slate-100">
+      <div className="max-w-5xl mx-auto px-6 py-10 space-y-8">
+        <div className="flex items-center justify-between">
+          <Link href="/" className="btn-ghost">
+            &larr; Back home
+          </Link>
+          <span className="text-xs uppercase tracking-[0.18em] text-slate-400">
+            Booking Flow
+          </span>
         </div>
-      )}
 
-      {/* Selected event detail */}
-      {selectedEvent && (
-        <div className="space-y-4">
-          <button
-            onClick={() => setSelectedEvent(null)}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            &larr; Back to events
-          </button>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr,1.05fr] gap-6">
+          {/* Event list */}
+          {!selectedEvent && (
+            <div className="glass-panel rounded-3xl p-6 sm:p-7 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-semibold text-white">Book a seat</h1>
+                  <p className="text-slate-300 text-sm">
+                    Pick an event to view live capacity and tiers.
+                  </p>
+                </div>
+                <span className="rounded-full bg-emerald-500/20 text-emerald-100 text-xs px-3 py-1 border border-emerald-400/30">
+                  Real-time
+                </span>
+              </div>
 
-          <div className="rounded-xl border border-gray-200 bg-white p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">
-              {selectedEvent.name}
-            </h2>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <Stat
-                label="Total Capacity"
-                value={selectedEvent.totalCapacity}
-              />
-              <Stat label="Confirmed" value={selectedEvent.confirmed} />
-              <Stat label="Available" value={selectedEvent.available} />
-              <Stat label="Waitlisted" value={selectedEvent.waitlisted} />
+              <div className="space-y-3">
+                {events.length === 0 && (
+                  <p className="text-slate-400 text-sm">No events found.</p>
+                )}
+                {events.map((ev) => (
+                  <button
+                    key={ev.id}
+                    onClick={() => selectEvent(ev.id)}
+                    className="group w-full text-left rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:border-cyan-300/60 hover:bg-white/8"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-white">{ev.name}</p>
+                        <p className="text-xs text-slate-400">Capacity: {ev.totalCapacity}</p>
+                      </div>
+                      <span className="text-[11px] rounded-full bg-white/5 px-3 py-1 text-slate-300 border border-white/10 group-hover:border-cyan-300/60">
+                        View
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Book form */}
-          <div className="rounded-xl border border-gray-200 bg-white p-6 space-y-4">
-            <h3 className="font-semibold text-gray-800">
-              {selectedEvent.available > 0 ? "Book a Ticket" : "Join Waitlist"}
-            </h3>
+          {/* Selected event detail */}
+          {selectedEvent && (
+            <div className="glass-panel rounded-3xl p-6 sm:p-7 space-y-6">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm text-slate-400">Selected event</p>
+                  <h2 className="text-2xl font-semibold text-white">
+                    {selectedEvent.name}
+                  </h2>
+                </div>
+                <button onClick={() => setSelectedEvent(null)} className="btn-ghost">
+                  Switch event
+                </button>
+              </div>
 
-            <input
-              placeholder="Your User ID"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-            />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <Stat label="Total Capacity" value={selectedEvent.totalCapacity} />
+                <Stat label="Confirmed" value={selectedEvent.confirmed} />
+                <Stat label="Available" value={selectedEvent.available} />
+                <Stat label="Waitlisted" value={selectedEvent.waitlisted} />
+              </div>
 
-            <select
-              value={tier}
-              onChange={(e) => setTier(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-            >
-              <option value="GENERAL">General</option>
-              <option value="VIP">VIP</option>
-              <option value="EARLY_BIRD">Early Bird</option>
-            </select>
+              {/* Book form */}
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-white">
+                    {selectedEvent.available > 0 ? "Book a Ticket" : "Join Waitlist"}
+                  </h3>
+                  <span className={`text-xs rounded-full px-3 py-1 border ${selectedEvent.available > 0 ? "border-emerald-300/40 text-emerald-100 bg-emerald-500/10" : "border-amber-200/40 text-amber-100 bg-amber-500/10"}`}>
+                    {selectedEvent.available > 0 ? "Spots open" : "Waitlist"}
+                  </span>
+                </div>
 
-            <button
-              disabled={loading || !userId.trim()}
-              onClick={handleBook}
-              className="w-full rounded-lg bg-gray-900 text-white py-2 text-sm font-medium disabled:opacity-40 hover:bg-gray-800 transition-colors"
-            >
-              {loading
-                ? "Processing…"
-                : selectedEvent.available > 0
-                  ? "Book Ticket"
-                  : "Join Waitlist"}
-            </button>
+                <input
+                  placeholder="Your User ID"
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
+                  className="input-style"
+                />
 
-            {msg && (
-              <p
-                className={`text-sm ${msg.type === "ok" ? "text-green-600" : "text-red-600"}`}
-              >
-                {msg.text}
-              </p>
-            )}
-          </div>
+                <select
+                  value={tier}
+                  onChange={(e) => setTier(e.target.value)}
+                  className="input-style"
+                >
+                  <option value="GENERAL">General</option>
+                  <option value="VIP">VIP</option>
+                  <option value="EARLY_BIRD">Early Bird</option>
+                </select>
+
+                <button
+                  disabled={loading || !userId.trim()}
+                  onClick={handleBook}
+                  className="w-full btn-primary"
+                >
+                  {loading
+                    ? "Processing…"
+                    : selectedEvent.available > 0
+                      ? "Book Ticket"
+                      : "Join Waitlist"}
+                </button>
+
+                {msg && (
+                  <p
+                    className={`rounded-xl border px-4 py-3 text-sm ${msg.type === "ok" ? "border-emerald-300/40 bg-emerald-500/10 text-emerald-50" : "border-rose-300/40 bg-rose-500/10 text-rose-50"}`}
+                  >
+                    {msg.text}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </main>
   );
 }
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div>
-      <p className="text-gray-400 text-xs">{label}</p>
-      <p className="text-lg font-semibold text-gray-800">{value}</p>
+    <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
+      <p className="text-xs text-slate-400">{label}</p>
+      <p className="text-xl font-semibold text-white">{value}</p>
     </div>
   );
 }

@@ -56,16 +56,16 @@ export default function OfferCard({
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-3">
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 space-y-4 shadow-lg shadow-cyan-500/10">
       <div className="flex justify-between items-start">
-        <div>
-          <p className="font-semibold text-gray-800">Offer</p>
-          <p className="text-xs text-gray-400">
-            RSVP {rsvp.id.slice(0, 8)}… &middot; {rsvp.tier}
+        <div className="space-y-1">
+          <p className="font-semibold text-white">Offer</p>
+          <p className="text-xs text-slate-400">
+            RSVP {rsvp.id.slice(0, 8)}… · {rsvp.tier}
           </p>
         </div>
         <span
-          className={`text-sm font-mono tabular-nums ${expired ? "text-red-500" : "text-green-600"}`}
+          className={`text-sm font-mono tabular-nums rounded-full px-3 py-1 border ${expired ? "border-rose-300/40 text-rose-100 bg-rose-500/10" : "border-emerald-300/40 text-emerald-50 bg-emerald-500/10"}`}
         >
           {expired ? "EXPIRED" : formatTime(remaining)}
         </span>
@@ -75,14 +75,14 @@ export default function OfferCard({
         <button
           disabled={acting || expired}
           onClick={accept}
-          className="flex-1 rounded-lg bg-green-600 text-white py-2 text-sm font-medium disabled:opacity-40 hover:bg-green-700 transition-colors"
+          className="flex-1 btn-primary"
         >
           Accept
         </button>
         <button
           disabled={acting}
           onClick={decline}
-          className="flex-1 rounded-lg bg-red-600 text-white py-2 text-sm font-medium disabled:opacity-40 hover:bg-red-700 transition-colors"
+          className="flex-1 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:border-rose-300/60"
         >
           Decline
         </button>
@@ -90,7 +90,7 @@ export default function OfferCard({
 
       {msg && (
         <p
-          className={`text-sm ${msg.type === "ok" ? "text-green-600" : "text-red-600"}`}
+          className={`rounded-xl border px-4 py-3 text-sm ${msg.type === "ok" ? "border-emerald-300/40 bg-emerald-500/10 text-emerald-50" : "border-rose-300/40 bg-rose-500/10 text-rose-50"}`}
         >
           {msg.text}
         </p>
